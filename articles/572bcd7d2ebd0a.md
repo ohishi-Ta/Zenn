@@ -1,9 +1,16 @@
 ---
-title: "【ECS】ECSについて改めて学んでみた"
+title: "【ECS・Fargate・Docker】ECS・Fargateを使用してコンテナ技術の基礎を学習してみた"
 emoji: "😸"
 type: "tech" # tech: 技術記事 / idea: アイデア
-topics: []
-published: false
+topics: 
+- aws
+- ecs
+- fargate
+- docker
+- hanson
+published: true
+published_at: "2025-08-07 00:28"
+
 ---
 # はじめに
 これまでDockerを使用して、Wordpressを動かしたりの経験はありましたが、いろいろなブログの内容を元に行っていたので、あまり詳しい知識はありませんでした。
@@ -180,9 +187,42 @@ docker image ls
 docker run -d -p 8081:3000 rails-app:latest
 ```
 
-
 # コンテナオーケストレーションとは
+コンテナオーケストレーションとは、コンテナの配置・ネットワーク・ライフサイクル（プロビジョニング、スケジューリング、デプロイ、削除など）を自動化し、大規模なアプリケーション運用を効率化する仕組みです。
+マイクロサービス化により数百〜数千のコンテナが発生しても、追加の管理負担を増やさずに運用できます。
 
+必要性としては、Dockerなどでコンテナ化は容易になったものの、単一サーバー上での管理は拡張性に限界があります。
+従来は複雑なスクリプトで複数サーバーに展開していましたが、バージョン管理や拡張が困難でした。
+オーケストレーションはこれらの課題を自動化し、大規模かつ柔軟なコンテナ運用を可能にします。
+
+![](https://storage.googleapis.com/zenn-user-upload/782fcc6a96f5-20250808.png)
+
+![](https://storage.googleapis.com/zenn-user-upload/4de3e33419bb-20250808.png)
+
+![](https://storage.googleapis.com/zenn-user-upload/656189c872cf-20250808.png)
+
+### Amazon Elastic Container Service(ECS)
+- クラウドでコンテナを本番環境利用するためのオーケストレーター
+- 各種AWS サービスとの高度な連携
+- 多様なワークロードをサポートする「タスク」「サービス」というシンプルなリソース表現
+- Linux/Windows サポート
+
+![](https://storage.googleapis.com/zenn-user-upload/8d6236f7a971-20250807.png)
+
+
+### AWS Fargate
+AWS Fargate は、AWS が提供する コンテナ専用のサーバーレス実行環境です。
+ざっくり言うと、EC2インスタンスを自分で用意・管理せずに、コンテナだけを動かせるサービスです。
+
+- AWS マネージド
+EC2 インスタンスのプロビジョン、スケール、管理不要
+- コンテナネイティブ
+仮想マシンを意識しないシームレスなスケーリング
+コンテナの起動時間・使用リソースに応じた料金設定
+- AWS サービスとの連携
+VPC ネットワーキング、Elastic Load Balancing、IAM、CloudWatchなど
+
+![](https://storage.googleapis.com/zenn-user-upload/9f5b8970d709-20250808.png)
 
 # ハンズオン：ECS
 ### 作るもの
@@ -349,6 +389,11 @@ EC2コンソール内のロードバランサーが表示されるので、ALB �
 
 ![](https://storage.googleapis.com/zenn-user-upload/2b0e679e3a75-20250807.png)
 
+# おわりに
+今回のハンズオンでは、Dockerの基礎から始まり、ECSとFargateを活用したコンテナ運用の流れを一通り体験しました。
+ローカルでのDockerイメージ作成、ECRへのプッシュ、ECSタスク定義やサービス設定、そしてALBを通じたアクセスまでを順を追って構築することで、クラウド上での本番運用のイメージが掴めたかと思います。
+特にFargateはサーバーレスでのコンテナ実行を可能にし、EC2管理の負担を大きく軽減できる点が魅力と思います。
+今後はECSのオートスケーリング、Blue/Greenデプロイなど、運用フェーズに必要な機能も触ってみたいと思います。
 
 # 参考サイト
 https://blog.serverworks.co.jp/container-docker-ecs-ecr-beginner-zukai
