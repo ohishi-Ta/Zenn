@@ -1,0 +1,34 @@
+name: Test Dify Connection
+
+on:
+  workflow_dispatch:  # 手動実行用
+
+jobs:
+  test-connection:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Test Dify API Connection
+      env:
+        DIFY_API_KEY: ${{ secrets.DIFY_API_KEY }}
+        DIFY_API_URL: ${{ secrets.DIFY_API_URL }}
+        DIFY_DATASET_ID: ${{ secrets.DIFY_DATASET_ID }}
+      run: |
+        echo "🔍 Testing Dify API connection..."
+        
+        # API接続テスト
+        response=$(curl -s -o /dev/null -w "%{http_code}" \
+          -H "Authorization: Bearer $DIFY_API_KEY" \
+          "$DIFY_API_URL/datasets/$DIFY_DATASET_ID")
+        
+        if [ $response -eq 200 ]; then
+          echo "✅ Successfully connected to Dify API!"
+          
+          # Dataset情報を取得
+          curl -s -H "Authorization: Bearer $DIFY_API_KEY" \
+            "$DIFY_API_URL/datasets/$DIFY_DATASET_ID" | \
+            python3 -m json.tool
+        else
+          echo "❌ Failed to connect. HTTP Status: $response"
+          exit 1
+        fi
