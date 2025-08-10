@@ -4,17 +4,17 @@ on:
   push:
     branches: [main]
     paths:
-      - 'article/**.md'
-      - 'article/**.mdx'
+      - 'articles/**.md'
+      - 'articles/**.mdx'
   pull_request:
     types: [closed]
     branches: [main]
     paths:
-      - 'article/**'
+      - 'articles/**'
   workflow_dispatch:
     inputs:
       sync_all:
-        description: 'Sync all article files'
+        description: 'Sync all articles'
         required: false
         type: boolean
         default: false
@@ -58,8 +58,8 @@ jobs:
                     'Content-Type': 'application/json'
                 }
                 self.sync_all = os.environ.get('SYNC_ALL', 'false').lower() == 'true'
-                # articleディレクトリを指定
-                self.article_dir = 'article'
+                # articlesディレクトリを指定
+                self.articles_dir = 'articles'
                 
             def get_existing_documents(self):
                 """既存ドキュメントの一覧を取得"""
@@ -79,23 +79,23 @@ jobs:
                 return docs
             
             def get_changed_files(self):
-                """articleディレクトリから変更されたファイルを取得"""
+                """articlesディレクトリから変更されたファイルを取得"""
                 if self.sync_all:
-                    # articleディレクトリの全ファイルを同期
-                    article_path = Path(self.article_dir)
-                    if not article_path.exists():
-                        print(f"⚠️ Directory '{self.article_dir}' not found")
+                    # articlesディレクトリの全ファイルを同期
+                    articles_path = Path(self.articles_dir)
+                    if not articles_path.exists():
+                        print(f"⚠️ Directory '{self.articles_dir}' not found")
                         return []
                     
                     files = []
                     for ext in ['*.md', '*.mdx']:
-                        files.extend(article_path.glob(ext))
+                        files.extend(articles_path.glob(ext))
                         # サブディレクトリも含める場合
-                        files.extend(article_path.rglob(ext))
+                        files.extend(articles_path.rglob(ext))
                     
                     return [str(f) for f in files]
                 else:
-                    # 変更されたファイルのみ（articleディレクトリ内）
+                    # 変更されたファイルのみ（articlesディレクトリ内）
                     import subprocess
                     result = subprocess.run(
                         ['git', 'diff', '--name-only', 'HEAD^', 'HEAD'],
@@ -103,18 +103,18 @@ jobs:
                     )
                     
                     if result.returncode != 0:
-                        # fallback: articleディレクトリの最近のmdファイルを取得
-                        article_path = Path(self.article_dir)
-                        if article_path.exists():
-                            files = list(article_path.glob('*.md'))[:5]
+                        # fallback: articlesディレクトリの最近のmdファイルを取得
+                        articles_path = Path(self.articles_dir)
+                        if articles_path.exists():
+                            files = list(articles_path.glob('*.md'))[:5]
                             return [str(f) for f in files]
                         return []
                     
                     files = result.stdout.strip().split('\n')
-                    # articleディレクトリ内のファイルのみフィルタ
+                    # articlesディレクトリ内のファイルのみフィルタ
                     return [
                         f for f in files 
-                        if f.startswith(self.article_dir + '/') and f.endswith(('.md', '.mdx'))
+                        if f.startswith(self.articles_dir + '/') and f.endswith(('.md', '.mdx'))
                     ]
             
             def extract_zenn_metadata(self, content):
@@ -159,12 +159,12 @@ jobs:
                     
                     # メタデータを構築
                     metadata = {
-                        "source": "github_article",
+                        "source": "github_articles",
                         "path": filepath,
                         "repository": os.environ.get('GITHUB_REPOSITORY', ''),
                         "commit": os.environ.get('GITHUB_SHA', '')[:7],
                         "sync_time": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
-                        "article_dir": self.article_dir
+                        "articles_dir": self.articles_dir
                     }
                     
                     # Zennメタデータを追加
@@ -172,7 +172,7 @@ jobs:
                     
                     # カテゴリを推定（ファイル名やディレクトリ構造から）
                     path_parts = filepath.split('/')
-                    if len(path_parts) > 2:  # article/subdirectory/file.md
+                    if len(path_parts) > 2:  # articles/subdirectory/file.md
                         metadata['category'] = path_parts[1]
                     
                     payload = {
@@ -224,15 +224,15 @@ jobs:
             
             def run(self):
                 """メイン処理"""
-                print("🚀 Starting Dify RAG synchronization for /article directory...")
+                print("🚀 Starting Dify RAG synchronization for /articles directory...")
                 print(f"   API URL: {self.api_url}")
                 print(f"   Dataset ID: {self.dataset_id}")
-                print(f"   Article Directory: {self.article_dir}")
+                print(f"   Articles Directory: {self.articles_dir}")
                 
-                # articleディレクトリの存在確認
-                if not Path(self.article_dir).exists():
-                    print(f"❌ Error: '{self.article_dir}' directory not found!")
-                    print("   Please ensure the article directory exists in your repository.")
+                # articlesディレクトリの存在確認
+                if not Path(self.articles_dir).exists():
+                    print(f"❌ Error: '{self.articles_dir}' directory not found!")
+                    print("   Please ensure the articles directory exists in your repository.")
                     sys.exit(1)
                 
                 # 既存ドキュメントを取得
@@ -242,10 +242,10 @@ jobs:
                 # 変更ファイルを取得
                 files = self.get_changed_files()
                 if not files:
-                    print("ℹ️ No article files to sync")
+                    print("ℹ️ No articles to sync")
                     return
                 
-                print(f"📝 Found {len(files)} article files to process...")
+                print(f"📝 Found {len(files)} articles to process...")
                 for f in files[:5]:  # 最初の5ファイルを表示
                     print(f"   - {f}")
                 if len(files) > 5:
@@ -270,19 +270,20 @@ jobs:
                 summary_file = os.environ.get('GITHUB_STEP_SUMMARY')
                 if summary_file:
                     with open(summary_file, 'w') as f:
-                        f.write(f"# 📚 Dify Article Sync Results\n\n")
+                        f.write(f"# 📚 Dify Articles Sync Results\n\n")
                         f.write(f"| Metric | Count |\n")
                         f.write(f"|--------|-------|\n")
                         f.write(f"| ✅ Success | {success} |\n")
                         f.write(f"| ❌ Failed | {failed} |\n")
                         f.write(f"| 📁 Total Files | {len(files)} |\n")
                         f.write(f"| 📚 Existing Docs | {len(existing_docs)} |\n")
-                        f.write(f"| 📂 Directory | `{self.article_dir}` |\n")
+                        f.write(f"| 📂 Directory | `{self.articles_dir}` |\n")
                         f.write(f"\n**Dataset:** `{self.dataset_id}`\n")
                         f.write(f"**Commit:** `{os.environ.get('GITHUB_SHA', 'unknown')[:7]}`\n")
+                        f.write(f"**Repository:** `{os.environ.get('GITHUB_REPOSITORY', 'unknown')}`\n")
                         
                         if files and success > 0:
-                            f.write(f"\n### Synced Articles\n")
+                            f.write(f"\n### Successfully Synced Articles\n")
                             for filepath in files[:10]:
                                 f.write(f"- `{filepath}`\n")
                             if len(files) > 10:
