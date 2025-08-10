@@ -1,25 +1,26 @@
-name: Sync Documents to Dify RAG
+name: Sync Articles to Dify RAG
 
 on:
   push:
     branches: [main]
     paths:
-      - '**.md'
-      - '**.mdx'
-      - 'docs/**'
+      - 'article/**.md'
+      - 'article/**.mdx'
   pull_request:
     types: [closed]
     branches: [main]
+    paths:
+      - 'article/**'
   workflow_dispatch:
     inputs:
       sync_all:
-        description: 'Sync all markdown files'
+        description: 'Sync all article files'
         required: false
         type: boolean
         default: false
 
 jobs:
-  sync-documents:
+  sync-articles:
     runs-on: ubuntu-latest
     
     steps:
@@ -57,6 +58,8 @@ jobs:
                     'Content-Type': 'application/json'
                 }
                 self.sync_all = os.environ.get('SYNC_ALL', 'false').lower() == 'true'
+                # articleディレクトリを指定
+                self.article_dir = 'article'
                 
             def get_existing_documents(self):
                 """既存ドキュメントの一覧を取得"""
@@ -76,27 +79,68 @@ jobs:
                 return docs
             
             def get_changed_files(self):
-                """変更されたファイルを取得"""
+                """articleディレクトリから変更されたファイルを取得"""
                 if self.sync_all:
-                    # 全ファイルを同期
+                    # articleディレクトリの全ファイルを同期
+                    article_path = Path(self.article_dir)
+                    if not article_path.exists():
+                        print(f"⚠️ Directory '{self.article_dir}' not found")
+                        return []
+                    
                     files = []
                     for ext in ['*.md', '*.mdx']:
-                        files.extend(Path('.').rglob(ext))
-                    return [str(f) for f in files if not str(f).startswith('.')]
+                        files.extend(article_path.glob(ext))
+                        # サブディレクトリも含める場合
+                        files.extend(article_path.rglob(ext))
+                    
+                    return [str(f) for f in files]
                 else:
-                    # 変更されたファイルのみ
+                    # 変更されたファイルのみ（articleディレクトリ内）
                     import subprocess
                     result = subprocess.run(
                         ['git', 'diff', '--name-only', 'HEAD^', 'HEAD'],
                         capture_output=True, text=True
                     )
+                    
                     if result.returncode != 0:
-                        # fallback: 最近のmdファイルを取得
-                        files = list(Path('.').rglob('*.md'))[:5]
-                        return [str(f) for f in files]
+                        # fallback: articleディレクトリの最近のmdファイルを取得
+                        article_path = Path(self.article_dir)
+                        if article_path.exists():
+                            files = list(article_path.glob('*.md'))[:5]
+                            return [str(f) for f in files]
+                        return []
                     
                     files = result.stdout.strip().split('\n')
-                    return [f for f in files if f.endswith(('.md', '.mdx'))]
+                    # articleディレクトリ内のファイルのみフィルタ
+                    return [
+                        f for f in files 
+                        if f.startswith(self.article_dir + '/') and f.endswith(('.md', '.mdx'))
+                    ]
+            
+            def extract_zenn_metadata(self, content):
+                """Zenn形式のメタデータを抽出"""
+                metadata = {}
+                if content.startswith('---'):
+                    try:
+                        end = content.index('---', 3)
+                        frontmatter = content[3:end].strip()
+                        for line in frontmatter.split('\n'):
+                            if ':' in line:
+                                key, value = line.split(':', 1)
+                                key = key.strip()
+                                value = value.strip().strip('"\'')
+                                
+                                # Zenn特有のメタデータ
+                                if key in ['title', 'emoji', 'type', 'topics', 'published']:
+                                    metadata[key] = value
+                                    
+                        # topicsをリストに変換
+                        if 'topics' in metadata:
+                            topics_str = metadata['topics'].strip('[]')
+                            metadata['topics'] = [t.strip().strip('"') for t in topics_str.split(',')]
+                    except:
+                        pass
+                return metadata
             
             def sync_document(self, filepath, existing_docs):
                 """ドキュメントを同期"""
@@ -107,27 +151,29 @@ jobs:
                     if not content.strip():
                         return False
                     
+                    # ファイル名から拡張子を除去
                     doc_name = os.path.basename(filepath)
                     
-                    # メタデータを追加
+                    # Zennメタデータを抽出
+                    zenn_metadata = self.extract_zenn_metadata(content)
+                    
+                    # メタデータを構築
                     metadata = {
-                        "source": "github",
+                        "source": "github_article",
                         "path": filepath,
                         "repository": os.environ.get('GITHUB_REPOSITORY', ''),
                         "commit": os.environ.get('GITHUB_SHA', '')[:7],
-                        "sync_time": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+                        "sync_time": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                        "article_dir": self.article_dir
                     }
                     
-                    # フロントマターからタイトルを抽出
-                    if content.startswith('---'):
-                        try:
-                            end = content.index('---', 3)
-                            frontmatter = content[3:end].strip()
-                            for line in frontmatter.split('\n'):
-                                if line.startswith('title:'):
-                                    metadata['title'] = line.split(':', 1)[1].strip().strip('"\'')
-                        except:
-                            pass
+                    # Zennメタデータを追加
+                    metadata.update(zenn_metadata)
+                    
+                    # カテゴリを推定（ファイル名やディレクトリ構造から）
+                    path_parts = filepath.split('/')
+                    if len(path_parts) > 2:  # article/subdirectory/file.md
+                        metadata['category'] = path_parts[1]
                     
                     payload = {
                         "name": doc_name,
@@ -162,6 +208,10 @@ jobs:
                     
                     if response.status_code in [200, 201]:
                         print(f"✅ {action}: {filepath}")
+                        if zenn_metadata.get('title'):
+                            print(f"   📝 Title: {zenn_metadata['title']}")
+                        if zenn_metadata.get('topics'):
+                            print(f"   🏷️ Topics: {', '.join(zenn_metadata['topics'])}")
                         return True
                     else:
                         print(f"❌ Failed to {action.lower()}: {filepath}")
@@ -174,21 +224,32 @@ jobs:
             
             def run(self):
                 """メイン処理"""
-                print("🚀 Starting Dify RAG synchronization...")
+                print("🚀 Starting Dify RAG synchronization for /article directory...")
                 print(f"   API URL: {self.api_url}")
                 print(f"   Dataset ID: {self.dataset_id}")
+                print(f"   Article Directory: {self.article_dir}")
+                
+                # articleディレクトリの存在確認
+                if not Path(self.article_dir).exists():
+                    print(f"❌ Error: '{self.article_dir}' directory not found!")
+                    print("   Please ensure the article directory exists in your repository.")
+                    sys.exit(1)
                 
                 # 既存ドキュメントを取得
                 existing_docs = self.get_existing_documents()
-                print(f"📚 Found {len(existing_docs)} existing documents")
+                print(f"📚 Found {len(existing_docs)} existing documents in Dify")
                 
                 # 変更ファイルを取得
                 files = self.get_changed_files()
                 if not files:
-                    print("ℹ️ No files to sync")
+                    print("ℹ️ No article files to sync")
                     return
                 
-                print(f"📝 Processing {len(files)} files...")
+                print(f"📝 Found {len(files)} article files to process...")
+                for f in files[:5]:  # 最初の5ファイルを表示
+                    print(f"   - {f}")
+                if len(files) > 5:
+                    print(f"   ... and {len(files) - 5} more")
                 
                 # 同期実行
                 success = 0
@@ -209,15 +270,23 @@ jobs:
                 summary_file = os.environ.get('GITHUB_STEP_SUMMARY')
                 if summary_file:
                     with open(summary_file, 'w') as f:
-                        f.write(f"# 📚 Dify RAG Sync Results\n\n")
+                        f.write(f"# 📚 Dify Article Sync Results\n\n")
                         f.write(f"| Metric | Count |\n")
                         f.write(f"|--------|-------|\n")
                         f.write(f"| ✅ Success | {success} |\n")
                         f.write(f"| ❌ Failed | {failed} |\n")
                         f.write(f"| 📁 Total Files | {len(files)} |\n")
                         f.write(f"| 📚 Existing Docs | {len(existing_docs)} |\n")
+                        f.write(f"| 📂 Directory | `{self.article_dir}` |\n")
                         f.write(f"\n**Dataset:** `{self.dataset_id}`\n")
                         f.write(f"**Commit:** `{os.environ.get('GITHUB_SHA', 'unknown')[:7]}`\n")
+                        
+                        if files and success > 0:
+                            f.write(f"\n### Synced Articles\n")
+                            for filepath in files[:10]:
+                                f.write(f"- `{filepath}`\n")
+                            if len(files) > 10:
+                                f.write(f"- ... and {len(files) - 10} more\n")
                 
                 if failed > 0:
                     sys.exit(1)
