@@ -2,10 +2,12 @@ name: Sync Changed Articles to Dify
 
 on:
   push:
-    branches: [main]
+    branches: 
+      - main
     paths:
       - 'articles/**.md'
       - 'articles/**.mdx'
+  workflow_dispatch:  # 手動実行用（デバッグに便利）
 
 jobs:
   sync-changed:
@@ -20,7 +22,12 @@ jobs:
     - name: Get changed files
       id: changed-files
       run: |
-        echo "files=$(git diff --name-only HEAD^ HEAD | grep '^articles/.*\.mdx\?$' | tr '\n' ' ')" >> $GITHUB_OUTPUT
+        # 変更されたファイルを取得
+        CHANGED=$(git diff --name-only HEAD^ HEAD | grep '^articles/.*\.mdx\?$' || echo "")
+        echo "files=$CHANGED" >> $GITHUB_OUTPUT
+        
+        # デバッグ出力
+        echo "Changed files: $CHANGED"
     
     - name: Setup Python
       if: steps.changed-files.outputs.files != ''
@@ -40,6 +47,7 @@ jobs:
         DIFY_DATASET_ID: ${{ secrets.DIFY_DATASET_ID }}
         CHANGED_FILES: ${{ steps.changed-files.outputs.files }}
       run: |
+        echo "Starting sync..."
         python - << 'EOF'
         import os
         import json
