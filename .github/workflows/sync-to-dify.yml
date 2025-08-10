@@ -1,0 +1,236 @@
+name: Sync Documents to Dify RAG
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.md'
+      - '**.mdx'
+      - 'docs/**'
+  pull_request:
+    types: [closed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sync_all:
+        description: 'Sync all markdown files'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  sync-documents:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: pip install requests pyyaml
+    
+    - name: Create sync script
+      run: |
+        cat > sync_dify.py << 'SCRIPT'
+        import os
+        import sys
+        import json
+        import requests
+        import hashlib
+        import time
+        from pathlib import Path
+        
+        class DifyRAGSync:
+            def __init__(self):
+                self.api_key = os.environ['DIFY_API_KEY']
+                self.api_url = os.environ['DIFY_API_URL']
+                self.dataset_id = os.environ['DIFY_DATASET_ID']
+                self.headers = {
+                    'Authorization': f'Bearer {self.api_key}',
+                    'Content-Type': 'application/json'
+                }
+                self.sync_all = os.environ.get('SYNC_ALL', 'false').lower() == 'true'
+                
+            def get_existing_documents(self):
+                """既存ドキュメントの一覧を取得"""
+                docs = {}
+                page = 1
+                while True:
+                    url = f"{self.api_url}/datasets/{self.dataset_id}/documents?page={page}&limit=100"
+                    response = requests.get(url, headers=self.headers)
+                    if response.status_code != 200:
+                        break
+                    data = response.json()
+                    for doc in data.get('data', []):
+                        docs[doc['name']] = doc['id']
+                    if not data.get('has_more', False):
+                        break
+                    page += 1
+                return docs
+            
+            def get_changed_files(self):
+                """変更されたファイルを取得"""
+                if self.sync_all:
+                    # 全ファイルを同期
+                    files = []
+                    for ext in ['*.md', '*.mdx']:
+                        files.extend(Path('.').rglob(ext))
+                    return [str(f) for f in files if not str(f).startswith('.')]
+                else:
+                    # 変更されたファイルのみ
+                    import subprocess
+                    result = subprocess.run(
+                        ['git', 'diff', '--name-only', 'HEAD^', 'HEAD'],
+                        capture_output=True, text=True
+                    )
+                    if result.returncode != 0:
+                        # fallback: 最近のmdファイルを取得
+                        files = list(Path('.').rglob('*.md'))[:5]
+                        return [str(f) for f in files]
+                    
+                    files = result.stdout.strip().split('\n')
+                    return [f for f in files if f.endswith(('.md', '.mdx'))]
+            
+            def sync_document(self, filepath, existing_docs):
+                """ドキュメントを同期"""
+                try:
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    if not content.strip():
+                        return False
+                    
+                    doc_name = os.path.basename(filepath)
+                    
+                    # メタデータを追加
+                    metadata = {
+                        "source": "github",
+                        "path": filepath,
+                        "repository": os.environ.get('GITHUB_REPOSITORY', ''),
+                        "commit": os.environ.get('GITHUB_SHA', '')[:7],
+                        "sync_time": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+                    }
+                    
+                    # フロントマターからタイトルを抽出
+                    if content.startswith('---'):
+                        try:
+                            end = content.index('---', 3)
+                            frontmatter = content[3:end].strip()
+                            for line in frontmatter.split('\n'):
+                                if line.startswith('title:'):
+                                    metadata['title'] = line.split(':', 1)[1].strip().strip('"\'')
+                        except:
+                            pass
+                    
+                    payload = {
+                        "name": doc_name,
+                        "text": content,
+                        "indexing_technique": "high_quality",
+                        "process_rule": {
+                            "mode": "automatic",
+                            "rules": {
+                                "pre_processing_rules": [
+                                    {"id": "remove_extra_spaces", "enabled": True},
+                                    {"id": "remove_urls_emails", "enabled": False}
+                                ],
+                                "segmentation": {
+                                    "separator": "\n\n",
+                                    "max_tokens": 1000
+                                }
+                            }
+                        },
+                        "metadata": metadata
+                    }
+                    
+                    if doc_name in existing_docs:
+                        # 更新
+                        url = f"{self.api_url}/datasets/{self.dataset_id}/documents/{existing_docs[doc_name]}/update_by_text"
+                        response = requests.post(url, headers=self.headers, json=payload)
+                        action = "Updated"
+                    else:
+                        # 新規作成
+                        url = f"{self.api_url}/datasets/{self.dataset_id}/document/create_by_text"
+                        response = requests.post(url, headers=self.headers, json=payload)
+                        action = "Created"
+                    
+                    if response.status_code in [200, 201]:
+                        print(f"✅ {action}: {filepath}")
+                        return True
+                    else:
+                        print(f"❌ Failed to {action.lower()}: {filepath}")
+                        print(f"   Response: {response.status_code} - {response.text[:200]}")
+                        return False
+                        
+                except Exception as e:
+                    print(f"❌ Error processing {filepath}: {str(e)}")
+                    return False
+            
+            def run(self):
+                """メイン処理"""
+                print("🚀 Starting Dify RAG synchronization...")
+                print(f"   API URL: {self.api_url}")
+                print(f"   Dataset ID: {self.dataset_id}")
+                
+                # 既存ドキュメントを取得
+                existing_docs = self.get_existing_documents()
+                print(f"📚 Found {len(existing_docs)} existing documents")
+                
+                # 変更ファイルを取得
+                files = self.get_changed_files()
+                if not files:
+                    print("ℹ️ No files to sync")
+                    return
+                
+                print(f"📝 Processing {len(files)} files...")
+                
+                # 同期実行
+                success = 0
+                failed = 0
+                for filepath in files:
+                    if self.sync_document(filepath, existing_docs):
+                        success += 1
+                    else:
+                        failed += 1
+                
+                # サマリー
+                print(f"\n📊 Sync Summary:")
+                print(f"   ✅ Success: {success}")
+                print(f"   ❌ Failed: {failed}")
+                print(f"   📁 Total: {len(files)}")
+                
+                # GitHub Actions サマリー
+                summary_file = os.environ.get('GITHUB_STEP_SUMMARY')
+                if summary_file:
+                    with open(summary_file, 'w') as f:
+                        f.write(f"# 📚 Dify RAG Sync Results\n\n")
+                        f.write(f"| Metric | Count |\n")
+                        f.write(f"|--------|-------|\n")
+                        f.write(f"| ✅ Success | {success} |\n")
+                        f.write(f"| ❌ Failed | {failed} |\n")
+                        f.write(f"| 📁 Total Files | {len(files)} |\n")
+                        f.write(f"| 📚 Existing Docs | {len(existing_docs)} |\n")
+                        f.write(f"\n**Dataset:** `{self.dataset_id}`\n")
+                        f.write(f"**Commit:** `{os.environ.get('GITHUB_SHA', 'unknown')[:7]}`\n")
+                
+                if failed > 0:
+                    sys.exit(1)
+        
+        if __name__ == "__main__":
+            syncer = DifyRAGSync()
+            syncer.run()
+        SCRIPT
+    
+    - name: Run synchronization
+      env:
+        DIFY_API_KEY: ${{ secrets.DIFY_API_KEY }}
+        DIFY_API_URL: ${{ secrets.DIFY_API_URL }}
+        DIFY_DATASET_ID: ${{ secrets.DIFY_DATASET_ID }}
+        SYNC_ALL: ${{ github.event.inputs.sync_all || 'false' }}
+      run: python sync_dify.py
