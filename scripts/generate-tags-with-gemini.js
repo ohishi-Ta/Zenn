@@ -13,50 +13,9 @@ if (fs.existsSync(existingMappingPath)) {
   existingMapping = data.tagMapping || {};
 }
 
-// シンプルなフォールバックルール
-function applySimpleRules(tag) {
-  const lower = tag.toLowerCase();
-  
-  // よく知られた略語のみ大文字化
-  const acronyms = ['api', 'aws', 'ai', 'ml', 'url', 'html', 'css', 'json', 'sql', 'vpc', 'ec2', 's3', 'rds'];
-  if (acronyms.includes(lower)) {
-    return tag.toUpperCase();
-  }
-  
-  // 人気フレームワークのみ特別処理
-  const popular = {
-    'nextjs': 'Next.js',
-    'javascript': 'JavaScript',
-    'typescript': 'TypeScript',
-    'react': 'React',
-    'python': 'Python'
-  };
-  if (popular[lower]) {
-    return popular[lower];
-  }
-  
-  // 日本語はそのまま
-  if (tag.match(/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/)) {
-    return tag;
-  }
-  
-  // デフォルト：最初を大文字に
-  return tag.charAt(0).toUpperCase() + tag.slice(1);
-}
-
 // 全タグを1回のリクエストで処理する関数
 async function processAllTagsInSingleRequest(newTags, articles) {
   console.log(`🚀 Processing ${newTags.length} tags in a single AI request...`);
-  
-  // フォールバックのみ使用する場合
-  if (process.env.FALLBACK_ONLY === 'true') {
-    console.log('📝 Using fallback rules only (no AI request)');
-    const mapping = {};
-    newTags.forEach(tag => {
-      mapping[tag.toLowerCase()] = applySimpleRules(tag);
-    });
-    return mapping;
-  }
   
   try {
     // タグリストとコンテキスト情報を準備
@@ -125,30 +84,20 @@ ${newTags.map(tag => `  "${tag}": "正式名称"`).join(',\n')}
       normalizedMapping[originalTag.toLowerCase()] = properName;
     });
     
-    // 処理されていないタグがあればフォールバックルールで補完
+    // 処理されていないタグがあればエラーとして扱う
     const processedTags = Object.keys(normalizedMapping);
     const missingTags = newTags.filter(tag => !processedTags.includes(tag.toLowerCase()));
     
     if (missingTags.length > 0) {
-      console.log(`⚠️  ${missingTags.length} tags missing from AI response, using fallback rules`);
-      missingTags.forEach(tag => {
-        normalizedMapping[tag.toLowerCase()] = applySimpleRules(tag);
-      });
+      throw new Error(`${missingTags.length} tags missing from AI response: ${missingTags.join(', ')}`);
     }
     
     console.log('✅ Successfully processed all tags in single request!');
     return normalizedMapping;
 
   } catch (error) {
-    console.error('❌ Single request failed:', error.message);
-    console.log('🔄 Falling back to simple rules for all tags...');
-    
-    const fallbackMapping = {};
-    newTags.forEach(tag => {
-      fallbackMapping[tag.toLowerCase()] = applySimpleRules(tag);
-    });
-    
-    return fallbackMapping;
+    console.error('❌ AI request failed:', error.message);
+    throw error; // エラーを再投げして処理を停止
   }
 }
 
@@ -222,14 +171,19 @@ async function main() {
   // 全タグを1回のリクエストで処理
   let newMappings = {};
   if (newTags.length > 0) {
-    newMappings = await processAllTagsInSingleRequest(newTags, articles);
-    
-    // 処理結果をログ出力
-    console.log('\n📋 Mapping results:');
-    Object.entries(newMappings).forEach(([original, mapped]) => {
-      const originalTag = newTags.find(t => t.toLowerCase() === original);
-      console.log(`  ${originalTag} → ${mapped}`);
-    });
+    try {
+      newMappings = await processAllTagsInSingleRequest(newTags, articles);
+      
+      // 処理結果をログ出力
+      console.log('\n📋 Mapping results:');
+      Object.entries(newMappings).forEach(([original, mapped]) => {
+        const originalTag = newTags.find(t => t.toLowerCase() === original);
+        console.log(`  ${originalTag} → ${mapped}`);
+      });
+    } catch (error) {
+      console.error('💥 Failed to process tags with AI:', error.message);
+      process.exit(1); // 処理を停止
+    }
   } else {
     console.log('✨ No new tags to process!');
   }
@@ -280,8 +234,7 @@ async function main() {
       totalTags: allTagsArray.length,
       newTagsProcessed: newTags.length,
       existingTags: allTagsArray.length - newTags.length,
-      requestsUsed: newTags.length > 0 && process.env.FALLBACK_ONLY !== 'true' ? 1 : 0,
-      fallbackOnly: process.env.FALLBACK_ONLY === 'true'
+      requestsUsed: newTags.length > 0 ? 1 : 0
     }
   };
   
@@ -301,7 +254,7 @@ async function main() {
   console.log(`   🆕 New tags processed: ${newTags.length}`);
   console.log(`   🔁 Existing tags reused: ${allTagsArray.length - newTags.length}`);
   console.log(`   🤖 AI requests used: ${output.processing.requestsUsed}`);
-  console.log(`   ⚡ Mode: ${process.env.FALLBACK_ONLY === 'true' ? 'Fallback only' : 'AI + Fallback'}`);
+  console.log(`   ⚡ Mode: AI only (no fallback)`);
 }
 
 main().catch(console.error);
