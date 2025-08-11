@@ -47,11 +47,11 @@ ${tagContexts.map((item, index) =>
 3. フレームワーク名は公式の表記に従う（例: nextjs → Next.js, react → React）
 4. AWSサービスは正式名称（例: apigateway → API Gateway）
 5. 日本語タグの場合はそのまま返す
-6. 不明な場合は、最も一般的と思われる表記を推測
+6. **不明な場合は、元のタグをそのまま返す（変更しない）**
 
 回答は以下のJSON形式で、必ず全${newTags.length}個のタグを含めてください:
 {
-${newTags.map(tag => `  "${tag}": "正式名称"`).join(',\n')}
+${newTags.map(tag => `  "${tag}": "正式名称または元のタグ"`).join(',\n')}
 }`;
 
     const model = genAI.getGenerativeModel({ 
@@ -84,12 +84,15 @@ ${newTags.map(tag => `  "${tag}": "正式名称"`).join(',\n')}
       normalizedMapping[originalTag.toLowerCase()] = properName;
     });
     
-    // 処理されていないタグがあればエラーとして扱う
+    // 処理されていないタグがあれば元のタグをそのまま使用
     const processedTags = Object.keys(normalizedMapping);
     const missingTags = newTags.filter(tag => !processedTags.includes(tag.toLowerCase()));
     
     if (missingTags.length > 0) {
-      throw new Error(`${missingTags.length} tags missing from AI response: ${missingTags.join(', ')}`);
+      console.log(`⚠️  ${missingTags.length} tags missing from AI response, keeping original`);
+      missingTags.forEach(tag => {
+        normalizedMapping[tag.toLowerCase()] = tag; // 元のタグをそのまま使用
+      });
     }
     
     console.log('✅ Successfully processed all tags in single request!');
@@ -97,7 +100,15 @@ ${newTags.map(tag => `  "${tag}": "正式名称"`).join(',\n')}
 
   } catch (error) {
     console.error('❌ AI request failed:', error.message);
-    throw error; // エラーを再投げして処理を停止
+    console.log('🔄 Keeping all tags unchanged due to AI failure...');
+    
+    // AI失敗時は全タグを元のまま保持
+    const unchangedMapping = {};
+    newTags.forEach(tag => {
+      unchangedMapping[tag.toLowerCase()] = tag;
+    });
+    
+    return unchangedMapping;
   }
 }
 
@@ -171,19 +182,15 @@ async function main() {
   // 全タグを1回のリクエストで処理
   let newMappings = {};
   if (newTags.length > 0) {
-    try {
-      newMappings = await processAllTagsInSingleRequest(newTags, articles);
-      
-      // 処理結果をログ出力
-      console.log('\n📋 Mapping results:');
-      Object.entries(newMappings).forEach(([original, mapped]) => {
-        const originalTag = newTags.find(t => t.toLowerCase() === original);
-        console.log(`  ${originalTag} → ${mapped}`);
-      });
-    } catch (error) {
-      console.error('💥 Failed to process tags with AI:', error.message);
-      process.exit(1); // 処理を停止
-    }
+    newMappings = await processAllTagsInSingleRequest(newTags, articles);
+    
+    // 処理結果をログ出力
+    console.log('\n📋 Mapping results:');
+    Object.entries(newMappings).forEach(([original, mapped]) => {
+      const originalTag = newTags.find(t => t.toLowerCase() === original);
+      const status = originalTag === mapped ? '(unchanged)' : '';
+      console.log(`  ${originalTag} → ${mapped} ${status}`);
+    });
   } else {
     console.log('✨ No new tags to process!');
   }
