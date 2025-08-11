@@ -233,41 +233,9 @@ async function main() {
   // 既存のマッピングと新しいマッピングを統合
   const tagMapping = { ...existingMapping, ...newMappings };
   
-  // 統計生成
-  const tagStats = {};
-  articles.forEach(article => {
-    article.topics.forEach(topic => {
-      const displayName = tagMapping[topic.toLowerCase()] || topic;
-      if (!tagStats[displayName]) {
-        tagStats[displayName] = {
-          count: 0,
-          articles: [],
-          variations: new Set()
-        };
-      }
-      tagStats[displayName].count++;
-      tagStats[displayName].articles.push(article.slug);
-      tagStats[displayName].variations.add(topic);
-    });
-  });
-  
-  Object.keys(tagStats).forEach(key => {
-    tagStats[key].variations = Array.from(tagStats[key].variations);
-  });
-  
-  // 出力（articlesを除外）
+  // 出力（tagMappingのみ）
   const output = {
-    tagMapping,
-    tagStats,
-    totalTags: Object.keys(tagMapping).length,
-    lastUpdated: new Date().toISOString(),
-    generatedBy: 'Single-request Gemini-powered tag mapper v4.0',
-    processing: {
-      totalTags: allTagsArray.length,
-      newTagsProcessed: newTags.length,
-      existingTags: allTagsArray.length - newTags.length,
-      requestsUsed: newTags.length > 0 ? 1 : 0
-    }
+    tagMapping
   };
   
   const publicDir = path.join(__dirname, '../public');
