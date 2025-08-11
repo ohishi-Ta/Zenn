@@ -151,30 +151,59 @@ async function processTagsInBatch(uniqueTags, articles) {
   return tagMapping;
 }
 
+// frontmatterのみを効率的に読み込む関数
+function readFrontmatterOnly(filePath) {
+  const content = fs.readFileSync(filePath, 'utf8');
+  
+  // frontmatterの終了位置を見つける（2つ目の --- を探す）
+  const lines = content.split('\n');
+  if (lines[0] !== '---') return null;
+  
+  let endIndex = -1;
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i] === '---') {
+      endIndex = i;
+      break;
+    }
+  }
+  
+  if (endIndex === -1) return null;
+  
+  // frontmatter部分のみを解析
+  const frontmatterContent = lines.slice(0, endIndex + 1).join('\n');
+  try {
+    const { data } = matter(frontmatterContent);
+    return data;
+  } catch (error) {
+    console.warn(`Failed to parse frontmatter in ${filePath}:`, error.message);
+    return null;
+  }
+}
+
 // メイン処理（topicsタグのみを収集するように最適化）
 async function main() {
   const articlesDir = path.join(__dirname, '../articles');
   const articles = [];
   const allTags = new Set();
   
-  // 記事データを収集（topicsのみ読み込み）
+  // 記事データを収集（frontmatterのみ読み込み）
   fs.readdirSync(articlesDir).forEach(file => {
     if (file.endsWith('.md')) {
-      const content = fs.readFileSync(path.join(articlesDir, file), 'utf8');
-      const { data } = matter(content);
+      const filePath = path.join(articlesDir, file);
+      const frontmatter = readFrontmatterOnly(filePath);
       
-      if (data.published && data.topics) {
+      if (frontmatter && frontmatter.published && frontmatter.topics) {
         const article = {
           slug: file.replace('.md', ''),
-          title: data.title,
-          emoji: data.emoji,
-          type: data.type || 'tech',
-          topics: data.topics,
-          published_at: data.published_at
+          title: frontmatter.title,
+          emoji: frontmatter.emoji,
+          type: frontmatter.type || 'tech',
+          topics: frontmatter.topics,
+          published_at: frontmatter.published_at
         };
         
         articles.push(article);
-        data.topics.forEach(tag => allTags.add(tag));
+        frontmatter.topics.forEach(tag => allTags.add(tag));
       }
     }
   });
