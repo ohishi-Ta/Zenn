@@ -2,13 +2,13 @@ name: Sync Articles to Dify RAG
 
 on:
   push:
-    branches: [main]
+    branches: [main2]
     paths:
       - 'articles/**.md'
       - 'articles/**.mdx'
   pull_request:
     types: [closed]
-    branches: [main]
+    branches: [main2]
     paths:
       - 'articles/**'
   workflow_dispatch:
