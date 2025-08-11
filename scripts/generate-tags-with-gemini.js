@@ -55,7 +55,7 @@ ${newTags.map(tag => `  "${tag}": "正式名称または元のタグ"`).join(',\
 }`;
 
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       generationConfig: {
         temperature: 0.1,
         maxOutputTokens: 2000, // 大量のタグに対応
