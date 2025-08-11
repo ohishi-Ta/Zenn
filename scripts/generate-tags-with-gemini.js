@@ -1,4 +1,5 @@
-const fs = require('fs');
+// 既存のマッピングと新しいマッピングを統合
+  const tagMapping = { ...existingMapping, ...newMappings };const fs = require('fs');
 const path = require('path');
 const matter = require('gray-matter');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -55,7 +56,7 @@ ${newTags.map(tag => `  "${tag}": "正式名称または元のタグ"`).join(',\
 }`;
 
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.0-flash",
+      model: "gemini-1.5-flash",
       generationConfig: {
         temperature: 0.1,
         maxOutputTokens: 2000, // 大量のタグに対応
@@ -64,8 +65,20 @@ ${newTags.map(tag => `  "${tag}": "正式名称または元のタグ"`).join(',\
 
     console.log('🤖 Sending single batch request to Gemini...');
     const result = await model.generateContent(prompt);
+    console.log('📡 Received result object:', !!result);
+    
     const response = await result.response;
+    console.log('📦 Received response object:', !!response);
+    
     const content = response.text();
+    console.log('📄 Content length:', content ? content.length : 'null/undefined');
+    console.log('📄 Content type:', typeof content);
+    
+    if (!content) {
+      console.error('❌ Empty response from Gemini');
+      console.error('🔍 Response object:', JSON.stringify(response, null, 2));
+      throw new Error('Empty response from Gemini API');
+    }
     
     console.log('📥 Received response, parsing JSON...');
     console.log('🔍 Response preview:', content.substring(0, 500));
@@ -230,54 +243,12 @@ async function main() {
     console.log('✨ No new tags to process!');
   }
   
-  // 既存のマッピングと新しいマッピングを統合
-  const tagMapping = { ...existingMapping, ...newMappings };
-  
-  // データ構築
-  const enrichedArticles = articles.map(article => ({
-    ...article,
-    topics: article.topics.map(topic => ({
-      original: topic,
-      display: tagMapping[topic.toLowerCase()] || topic
-    }))
-  }));
-  
-  // 統計生成
-  const tagStats = {};
-  enrichedArticles.forEach(article => {
-    article.topics.forEach(topic => {
-      const displayName = topic.display;
-      if (!tagStats[displayName]) {
-        tagStats[displayName] = {
-          count: 0,
-          articles: [],
-          variations: new Set()
-        };
-      }
-      tagStats[displayName].count++;
-      tagStats[displayName].articles.push(article.slug);
-      tagStats[displayName].variations.add(topic.original);
-    });
-  });
-  
-  Object.keys(tagStats).forEach(key => {
-    tagStats[key].variations = Array.from(tagStats[key].variations);
-  });
-  
-  // 出力
+  // 出力（タグマッピングのみ）
   const output = {
     tagMapping,
-    articles: enrichedArticles,
-    tagStats,
     totalTags: Object.keys(tagMapping).length,
     lastUpdated: new Date().toISOString(),
-    generatedBy: 'Single-request Gemini-powered tag mapper v4.0',
-    processing: {
-      totalTags: allTagsArray.length,
-      newTagsProcessed: newTags.length,
-      existingTags: allTagsArray.length - newTags.length,
-      requestsUsed: newTags.length > 0 ? 1 : 0
-    }
+    generatedBy: 'Single-request Gemini-powered tag mapper v4.0'
   };
   
   const publicDir = path.join(__dirname, '../public');
@@ -292,11 +263,8 @@ async function main() {
   
   console.log('\n✅ Successfully generated tags mapping!');
   console.log(`   📊 Total tags: ${Object.keys(tagMapping).length}`);
-  console.log(`   📝 Articles processed: ${articles.length}`);
   console.log(`   🆕 New tags processed: ${newTags.length}`);
   console.log(`   🔁 Existing tags reused: ${allTagsArray.length - newTags.length}`);
-  console.log(`   🤖 AI requests used: ${output.processing.requestsUsed}`);
-  console.log(`   ⚡ Mode: AI only (no fallback)`);
 }
 
 main().catch(console.error);
