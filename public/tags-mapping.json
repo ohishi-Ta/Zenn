@@ -2796,13 +2796,12 @@
     }
   },
   "totalTags": 95,
-  "lastUpdated": "2025-08-11T09:49:22.906Z",
+  "lastUpdated": "2025-08-11T11:22:32.575Z",
   "generatedBy": "Single-request Gemini-powered tag mapper v4.0",
   "processing": {
     "totalTags": 95,
-    "newTagsProcessed": 95,
-    "existingTags": 0,
-    "requestsUsed": 1,
-    "fallbackOnly": false
+    "newTagsProcessed": 0,
+    "existingTags": 95,
+    "requestsUsed": 0
   }
 }
