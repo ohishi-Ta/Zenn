@@ -5,7 +5,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
 
-// 既存のマッピングを読み込み（学習データとして使用）
+// 既存のマッピングを読み込み
 const existingMappingPath = path.join(__dirname, '../public/tags-mapping.json');
 let existingMapping = {};
 if (fs.existsSync(existingMappingPath)) {
@@ -13,150 +13,150 @@ if (fs.existsSync(existingMappingPath)) {
   existingMapping = data.tagMapping || {};
 }
 
-// よく使われる技術タグの基本ルール（AIへのヒント用）
-const knownPatterns = {
-  aws_services: ['ec2', 's3', 'lambda', 'rds', 'dynamodb', 'cloudfront'],
-  programming_languages: ['javascript', 'typescript', 'python', 'go', 'rust'],
-  frameworks: ['react', 'vue', 'angular', 'nextjs', 'nuxtjs'],
-  databases: ['mysql', 'postgresql', 'mongodb', 'redis'],
-  tools: ['docker', 'kubernetes', 'terraform', 'ansible'],
-};
-
-async function getProperTagName(tag, context = {}) {
-  // 既にマッピングがある場合はそれを使用
-  if (existingMapping[tag.toLowerCase()]) {
-    return existingMapping[tag.toLowerCase()];
+// シンプルなフォールバックルール
+function applySimpleRules(tag) {
+  const lower = tag.toLowerCase();
+  
+  // よく知られた略語のみ大文字化
+  const acronyms = ['api', 'aws', 'ai', 'ml', 'url', 'html', 'css', 'json', 'sql', 'vpc', 'ec2', 's3', 'rds'];
+  if (acronyms.includes(lower)) {
+    return tag.toUpperCase();
   }
+  
+  // 人気フレームワークのみ特別処理
+  const popular = {
+    'nextjs': 'Next.js',
+    'javascript': 'JavaScript',
+    'typescript': 'TypeScript',
+    'react': 'React',
+    'python': 'Python'
+  };
+  if (popular[lower]) {
+    return popular[lower];
+  }
+  
+  // 日本語はそのまま
+  if (tag.match(/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/)) {
+    return tag;
+  }
+  
+  // デフォルト：最初を大文字に
+  return tag.charAt(0).toUpperCase() + tag.slice(1);
+}
 
+// 全タグを1回のリクエストで処理する関数
+async function processAllTagsInSingleRequest(newTags, articles) {
+  console.log(`🚀 Processing ${newTags.length} tags in a single AI request...`);
+  
+  // フォールバックのみ使用する場合
+  if (process.env.FALLBACK_ONLY === 'true') {
+    console.log('📝 Using fallback rules only (no AI request)');
+    const mapping = {};
+    newTags.forEach(tag => {
+      mapping[tag.toLowerCase()] = applySimpleRules(tag);
+    });
+    return mapping;
+  }
+  
   try {
-    const prompt = `
-あなたは技術用語の正式名称を判定する専門家です。
-以下のタグの適切な表記（正式名称やよく使われる表記）を判定してください。
+    // タグリストとコンテキスト情報を準備
+    const tagContexts = newTags.map(tag => {
+      const contexts = articles
+        .filter(a => a.topics.includes(tag))
+        .slice(0, 2) // 各タグにつき最大2記事のコンテキスト
+        .map(a => ({ title: a.title, otherTags: a.topics.filter(t => t !== tag) }));
+      
+      return {
+        tag,
+        contexts: contexts.length > 0 ? contexts : [{ title: 'なし', otherTags: [] }]
+      };
+    });
 
-タグ: "${tag}"
+    const prompt = `あなたは技術用語の正式名称を判定する専門家です。
+以下の${newTags.length}個のタグについて、それぞれの適切な表記（正式名称やよく使われる表記）をまとめて判定してください。
 
-コンテキスト情報:
-- 記事タイトル: ${context.title || 'なし'}
-- 他のタグ: ${context.otherTags ? context.otherTags.join(', ') : 'なし'}
-- 記事タイプ: ${context.type || 'tech'}
-
-既存のマッピング例:
-${JSON.stringify(Object.entries(existingMapping).slice(0, 10), null, 2)}
+タグ一覧とコンテキスト:
+${tagContexts.map((item, index) => 
+  `${index + 1}. "${item.tag}"
+   記事例: ${item.contexts[0].title}
+   関連タグ: ${item.contexts[0].otherTags.slice(0, 3).join(', ') || 'なし'}`
+).join('\n')}
 
 判定ルール:
 1. 公式ドキュメントで使われている正式名称を優先
 2. 略語の場合は一般的に使われる大文字小文字を適用（例: aws → AWS, api → API）
 3. フレームワーク名は公式の表記に従う（例: nextjs → Next.js, react → React）
-4. 日本語タグの場合はそのまま返す
-5. 不明な場合は、最も一般的と思われる表記を推測
+4. AWSサービスは正式名称（例: apigateway → API Gateway）
+5. 日本語タグの場合はそのまま返す
+6. 不明な場合は、最も一般的と思われる表記を推測
 
-回答は以下のJSON形式で、理由の説明は不要です:
-{"proper_name": "正式名称"}
-`;
+回答は以下のJSON形式で、必ず全${newTags.length}個のタグを含めてください:
+{
+${newTags.map(tag => `  "${tag}": "正式名称"`).join(',\n')}
+}`;
 
-    // Gemini Proモデルを使用
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash", // コスト効率の良いモデル
+      model: "gemini-1.5-flash",
       generationConfig: {
-        temperature: 0.1, // 一貫性を重視
-        maxOutputTokens: 100,
+        temperature: 0.1,
+        maxOutputTokens: 2000, // 大量のタグに対応
       },
     });
 
+    console.log('🤖 Sending single batch request to Gemini...');
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const content = response.text();
     
-    // JSONパースを試行
-    const jsonMatch = content.match(/\{[^}]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      return parsed.proper_name;
+    console.log('📥 Received response, parsing JSON...');
+    
+    // JSONを抽出して解析
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('No JSON found in response');
     }
     
-    // JSON形式でない場合は、内容から推測
-    throw new Error('Invalid JSON response');
+    const jsonContent = jsonMatch[0];
+    const aiMapping = JSON.parse(jsonContent);
+    
+    // AIの結果を小文字キーのマッピングに変換
+    const normalizedMapping = {};
+    Object.entries(aiMapping).forEach(([originalTag, properName]) => {
+      normalizedMapping[originalTag.toLowerCase()] = properName;
+    });
+    
+    // 処理されていないタグがあればフォールバックルールで補完
+    const processedTags = Object.keys(normalizedMapping);
+    const missingTags = newTags.filter(tag => !processedTags.includes(tag.toLowerCase()));
+    
+    if (missingTags.length > 0) {
+      console.log(`⚠️  ${missingTags.length} tags missing from AI response, using fallback rules`);
+      missingTags.forEach(tag => {
+        normalizedMapping[tag.toLowerCase()] = applySimpleRules(tag);
+      });
+    }
+    
+    console.log('✅ Successfully processed all tags in single request!');
+    return normalizedMapping;
 
   } catch (error) {
-    console.error(`Error processing tag "${tag}":`, error.message);
+    console.error('❌ Single request failed:', error.message);
+    console.log('🔄 Falling back to simple rules for all tags...');
     
-    // AIが失敗した場合の簡単なフォールバック処理
-    return applyBasicRules(tag);
+    const fallbackMapping = {};
+    newTags.forEach(tag => {
+      fallbackMapping[tag.toLowerCase()] = applySimpleRules(tag);
+    });
+    
+    return fallbackMapping;
   }
 }
 
-// AIが使えない場合の基本的なルール
-function applyBasicRules(tag) {
-  const lower = tag.toLowerCase();
-  
-  // よく知られた略語は大文字に
-  const commonAcronyms = ['api', 'aws', 'gcp', 'ai', 'ml', 'ci', 'cd', 'url', 'uri', 'html', 'css', 'svg', 'pdf', 'json', 'xml', 'sql', 'orm', 'cms', 'cdn', 'dns', 'ssh', 'ssl', 'tls', 'vpc', 'iam', 'ram', 'cpu', 'gpu', 'seo'];
-  if (commonAcronyms.includes(lower)) {
-    return tag.toUpperCase();
-  }
-  
-  // .jsや.tsで終わる場合は特別処理
-  if (lower.endsWith('js')) {
-    const base = lower.slice(0, -2);
-    return base.charAt(0).toUpperCase() + base.slice(1) + '.js';
-  }
-  
-  if (lower.endsWith('ts')) {
-    const base = lower.slice(0, -2);
-    return base.charAt(0).toUpperCase() + base.slice(1) + '.ts';
-  }
-  
-  // キャメルケースっぽいものは維持
-  if (tag.match(/[a-z][A-Z]/)) {
-    return tag;
-  }
-  
-  // それ以外は最初を大文字に
-  return tag.charAt(0).toUpperCase() + tag.slice(1);
-}
-
-// バッチ処理で効率化
-async function processTagsInBatch(uniqueTags, articles) {
-  const tagMapping = { ...existingMapping };
-  const newTags = [];
-  
-  for (const tag of uniqueTags) {
-    if (!tagMapping[tag.toLowerCase()]) {
-      newTags.push(tag);
-    }
-  }
-  
-  console.log(`Found ${newTags.length} new tags to process`);
-  
-  // 新しいタグをバッチで処理（API呼び出しを削減）
-  for (const tag of newTags) {
-    // タグが使われている記事のコンテキストを収集
-    const contexts = articles
-      .filter(a => a.topics.includes(tag))
-      .slice(0, 3) // 最初の3記事だけ使用
-      .map(a => ({
-        title: a.title,
-        otherTags: a.topics.filter(t => t !== tag),
-        type: a.type
-      }));
-    
-    const properName = await getProperTagName(tag, contexts[0] || {});
-    tagMapping[tag.toLowerCase()] = properName;
-    console.log(`  ${tag} → ${properName}`);
-    
-    // レート制限対策（Geminiは1分あたり60リクエスト）
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  }
-  
-  return tagMapping;
-}
-
-// frontmatterのみを効率的に読み込む関数
+// frontmatterのみを効率的に読み込む
 function readFrontmatterOnly(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
-  
-  // frontmatterの終了位置を見つける（2つ目の --- を探す）
   const lines = content.split('\n');
+  
   if (lines[0] !== '---') return null;
   
   let endIndex = -1;
@@ -169,7 +169,6 @@ function readFrontmatterOnly(filePath) {
   
   if (endIndex === -1) return null;
   
-  // frontmatter部分のみを解析
   const frontmatterContent = lines.slice(0, endIndex + 1).join('\n');
   try {
     const { data } = matter(frontmatterContent);
@@ -180,40 +179,65 @@ function readFrontmatterOnly(filePath) {
   }
 }
 
-// メイン処理（topicsタグのみを収集するように最適化）
+// メイン処理
 async function main() {
+  console.log('🚀 Starting single-request tag mapping generation...');
+  
   const articlesDir = path.join(__dirname, '../articles');
   const articles = [];
   const allTags = new Set();
   
-  // 記事データを収集（frontmatterのみ読み込み）
-  fs.readdirSync(articlesDir).forEach(file => {
-    if (file.endsWith('.md')) {
-      const filePath = path.join(articlesDir, file);
-      const frontmatter = readFrontmatterOnly(filePath);
+  // frontmatterのみ読み込み
+  const files = fs.readdirSync(articlesDir).filter(f => f.endsWith('.md'));
+  console.log(`📁 Found ${files.length} markdown files`);
+  
+  files.forEach(file => {
+    const filePath = path.join(articlesDir, file);
+    const frontmatter = readFrontmatterOnly(filePath);
+    
+    if (frontmatter && frontmatter.published && frontmatter.topics) {
+      const article = {
+        slug: file.replace('.md', ''),
+        title: frontmatter.title,
+        emoji: frontmatter.emoji,
+        type: frontmatter.type || 'tech',
+        topics: frontmatter.topics,
+        published_at: frontmatter.published_at
+      };
       
-      if (frontmatter && frontmatter.published && frontmatter.topics) {
-        const article = {
-          slug: file.replace('.md', ''),
-          title: frontmatter.title,
-          emoji: frontmatter.emoji,
-          type: frontmatter.type || 'tech',
-          topics: frontmatter.topics,
-          published_at: frontmatter.published_at
-        };
-        
-        articles.push(article);
-        frontmatter.topics.forEach(tag => allTags.add(tag));
-      }
+      articles.push(article);
+      frontmatter.topics.forEach(tag => allTags.add(tag));
     }
   });
   
-  console.log(`Processing ${allTags.size} unique tags from ${articles.length} articles...`);
+  console.log(`📚 Found ${allTags.size} unique tags from ${articles.length} articles`);
   
-  // AIでタグマッピングを生成
-  const tagMapping = await processTagsInBatch(Array.from(allTags), articles);
+  // 新しいタグのみを特定
+  const allTagsArray = Array.from(allTags);
+  const newTags = allTagsArray.filter(tag => !existingMapping[tag.toLowerCase()]);
   
-  // 記事データにマッピングを適用
+  console.log(`🆕 ${newTags.length} new tags to process`);
+  console.log(`♻️  ${allTagsArray.length - newTags.length} tags already mapped`);
+  
+  // 全タグを1回のリクエストで処理
+  let newMappings = {};
+  if (newTags.length > 0) {
+    newMappings = await processAllTagsInSingleRequest(newTags, articles);
+    
+    // 処理結果をログ出力
+    console.log('\n📋 Mapping results:');
+    Object.entries(newMappings).forEach(([original, mapped]) => {
+      const originalTag = newTags.find(t => t.toLowerCase() === original);
+      console.log(`  ${originalTag} → ${mapped}`);
+    });
+  } else {
+    console.log('✨ No new tags to process!');
+  }
+  
+  // 既存のマッピングと新しいマッピングを統合
+  const tagMapping = { ...existingMapping, ...newMappings };
+  
+  // データ構築
   const enrichedArticles = articles.map(article => ({
     ...article,
     topics: article.topics.map(topic => ({
@@ -222,7 +246,7 @@ async function main() {
     }))
   }));
   
-  // 統計情報を生成
+  // 統計生成
   const tagStats = {};
   enrichedArticles.forEach(article => {
     article.topics.forEach(topic => {
@@ -240,7 +264,6 @@ async function main() {
     });
   });
   
-  // Set を配列に変換
   Object.keys(tagStats).forEach(key => {
     tagStats[key].variations = Array.from(tagStats[key].variations);
   });
@@ -252,10 +275,16 @@ async function main() {
     tagStats,
     totalTags: Object.keys(tagMapping).length,
     lastUpdated: new Date().toISOString(),
-    generatedBy: 'Gemini-powered tag mapper v2.0'
+    generatedBy: 'Single-request Gemini-powered tag mapper v4.0',
+    processing: {
+      totalTags: allTagsArray.length,
+      newTagsProcessed: newTags.length,
+      existingTags: allTagsArray.length - newTags.length,
+      requestsUsed: newTags.length > 0 && process.env.FALLBACK_ONLY !== 'true' ? 1 : 0,
+      fallbackOnly: process.env.FALLBACK_ONLY === 'true'
+    }
   };
   
-  // publicディレクトリがなければ作成
   const publicDir = path.join(__dirname, '../public');
   if (!fs.existsSync(publicDir)) {
     fs.mkdirSync(publicDir);
@@ -266,10 +295,13 @@ async function main() {
     JSON.stringify(output, null, 2)
   );
   
-  console.log(`✅ Successfully generated tags mapping with Gemini!`);
-  console.log(`   - Total tags: ${Object.keys(tagMapping).length}`);
-  console.log(`   - Articles processed: ${articles.length}`);
-  console.log(`   - New tags added: ${Object.keys(tagMapping).length - Object.keys(existingMapping).length}`);
+  console.log('\n✅ Successfully generated tags mapping!');
+  console.log(`   📊 Total tags: ${Object.keys(tagMapping).length}`);
+  console.log(`   📝 Articles processed: ${articles.length}`);
+  console.log(`   🆕 New tags processed: ${newTags.length}`);
+  console.log(`   🔁 Existing tags reused: ${allTagsArray.length - newTags.length}`);
+  console.log(`   🤖 AI requests used: ${output.processing.requestsUsed}`);
+  console.log(`   ⚡ Mode: ${process.env.FALLBACK_ONLY === 'true' ? 'Fallback only' : 'AI + Fallback'}`);
 }
 
 main().catch(console.error);
