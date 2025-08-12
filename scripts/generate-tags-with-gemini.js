@@ -253,8 +253,6 @@ async function main() {
   console.log(`   📝 Articles processed: ${articles.length}`);
   console.log(`   🆕 New tags processed: ${newTags.length}`);
   console.log(`   🔁 Existing tags reused: ${allTagsArray.length - newTags.length}`);
-  console.log(`   🤖 AI requests used: ${output.processing.requestsUsed}`);
-  console.log(`   ⚡ Mode: AI only (no fallback)`);
 }
 
 main().catch(console.error);
