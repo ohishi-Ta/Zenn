@@ -7,7 +7,6 @@ topics:
 - ecs
 - fargate
 - docker
-- hanson
 published: true
 published_at: "2025-08-07 00:28"
 
