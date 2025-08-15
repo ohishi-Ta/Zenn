@@ -87,7 +87,6 @@
     "python": "Python",
     "vercel": "Vercel",
     "security": "Security",
-    "amplify": "AWS Amplify",
-    "cognitosssddds": "Amazon Cognito"
+    "amplify": "AWS Amplify"
   }
 }
