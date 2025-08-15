@@ -86,6 +86,7 @@
     "認証": "認証",
     "python": "Python",
     "vercel": "Vercel",
-    "security": "Security"
+    "security": "Security",
+    "amplify": "AWS Amplify"
   }
 }
