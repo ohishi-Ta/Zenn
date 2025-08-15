@@ -4,7 +4,7 @@ on:
     paths:
       - 'articles/*.md'
     branches:
-      - main
+      - main-actions
   workflow_dispatch: # 手動実行も可能に
 
 jobs:
