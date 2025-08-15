@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -31,9 +33,9 @@ jobs:
           git config --global user.name 'GitHub Actions Bot'
           git config --global user.email 'actions@github.com'
           
-          # main-actionsブランチに切り替え
-          git fetch origin main-actions:main-actions || true
-          git checkout -B main-actions
+          git fetch origin main-actions
+          git checkout main-actions
+          git pull origin main-actions
           
           git add public/tags-mapping.json
           git diff --staged --quiet || git commit -m "🤖 Update tags mapping with Gemini AI"
