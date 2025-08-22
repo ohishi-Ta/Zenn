@@ -35,12 +35,9 @@ jobs:
         env:
           GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
         run: node scripts/generate-tags-with-gemini.js
-      
-      - name: Generate articles index JSON
-        run: node scripts/collect-articles-index.js
-      
+        
       - name: Generate articles index CSV
-        run: node scripts/collect-articles-csv.js
+        run: node scripts/collect-articles-index.js
       
       - name: Commit and push changes
         run: |
@@ -49,12 +46,11 @@ jobs:
           
           # 生成されたファイルをステージング
           git add public/tags-mapping.json
-          git add public/articles-index.json
           git add public/articles-index.csv
           
           # articlesとscriptsの変更は含めない（mainから取得しただけなので）
           git reset HEAD articles/ scripts/
           
           # 変更がある場合のみコミット
-          git diff --staged --quiet || git commit -m "🤖 Update tags mapping, articles index (JSON & CSV)"
+          git diff --staged --quiet || git commit -m "🤖 Update tags mapping, articles index (CSV)"
           git push origin main-actions
