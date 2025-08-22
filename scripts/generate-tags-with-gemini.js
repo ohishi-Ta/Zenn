@@ -202,12 +202,32 @@ async function main() {
   
   console.log(`📚 Found ${allTags.size} unique tags from ${articles.length} articles`);
   
-  // 新しいタグのみを特定
+  // 現在使用中のタグのみを対象にする
   const allTagsArray = Array.from(allTags);
-  const newTags = allTagsArray.filter(tag => !existingMapping[tag.toLowerCase()]);
+  
+  // 既存マッピングから、現在も使用中のタグのみを抽出
+  const currentlyUsedExistingMapping = {};
+  allTagsArray.forEach(tag => {
+    const lowerTag = tag.toLowerCase();
+    if (existingMapping[lowerTag]) {
+      currentlyUsedExistingMapping[lowerTag] = existingMapping[lowerTag];
+    }
+  });
+  
+  // 新しいタグのみを特定（既存マッピングに存在しないタグ）
+  const newTags = allTagsArray.filter(tag => !currentlyUsedExistingMapping[tag.toLowerCase()]);
   
   console.log(`🆕 ${newTags.length} new tags to process`);
   console.log(`♻️  ${allTagsArray.length - newTags.length} tags already mapped`);
+  
+  // 削除されたタグを特定（ログ用）
+  const deletedTags = Object.keys(existingMapping).filter(
+    tag => !allTagsArray.some(t => t.toLowerCase() === tag)
+  );
+  if (deletedTags.length > 0) {
+    console.log(`🗑️  ${deletedTags.length} tags removed (no longer used):`);
+    deletedTags.forEach(tag => console.log(`   - ${tag} → ${existingMapping[tag]}`));
+  }
   
   // 全タグを1回のリクエストで処理
   let newMappings = {};
@@ -230,8 +250,8 @@ async function main() {
     console.log('✨ No new tags to process!');
   }
   
-  // 既存のマッピングと新しいマッピングを統合
-  const tagMapping = { ...existingMapping, ...newMappings };
+  // 現在使用中のタグのマッピングのみを保持
+  const tagMapping = { ...currentlyUsedExistingMapping, ...newMappings };
   
   // 出力（tagMappingのみ）
   const output = {
@@ -249,10 +269,11 @@ async function main() {
   );
   
   console.log('\n✅ Successfully generated tags mapping!');
-  console.log(`   📊 Total tags: ${Object.keys(tagMapping).length}`);
+  console.log(`   📊 Total tags in mapping: ${Object.keys(tagMapping).length}`);
   console.log(`   📝 Articles processed: ${articles.length}`);
   console.log(`   🆕 New tags processed: ${newTags.length}`);
   console.log(`   🔁 Existing tags reused: ${allTagsArray.length - newTags.length}`);
+  console.log(`   🗑️  Unused tags removed: ${deletedTags.length}`);
 }
 
 main().catch(console.error);
