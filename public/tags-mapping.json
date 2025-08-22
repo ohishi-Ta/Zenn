@@ -2,12 +2,12 @@
   "tagMapping": {
     "aws": "AWS",
     "lambda": "AWS Lambda",
+    "apigateway": "Amazon API Gateway",
     "linux": "Linux",
     "github": "GitHub",
     "mcp": "MCP",
     "claude": "Claude",
     "dns": "DNS",
-    "apigateway": "Amazon API Gateway",
     "cloudwatchlogs": "Amazon CloudWatch Logs",
     "terraform": "Terraform",
     "amazonbedrock": "Amazon Bedrock",
@@ -87,7 +87,6 @@
     "eventbridge": "Amazon EventBridge",
     "python": "Python",
     "vercel": "Vercel",
-    "security": "Security",
-    "ttttt": "ttttt"
+    "security": "Security"
   }
 }
