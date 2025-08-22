@@ -2,12 +2,12 @@
   "tagMapping": {
     "aws": "AWS",
     "lambda": "AWS Lambda",
-    "apigateway": "Amazon API Gateway",
     "linux": "Linux",
     "github": "GitHub",
     "mcp": "MCP",
     "claude": "Claude",
     "dns": "DNS",
+    "apigateway": "Amazon API Gateway",
     "cloudwatchlogs": "Amazon CloudWatch Logs",
     "terraform": "Terraform",
     "amazonbedrock": "Amazon Bedrock",
@@ -80,15 +80,14 @@
     "dify": "Dify",
     "cloudflare": "Cloudflare",
     "githubactions": "GitHub Actions",
+    "認証": "認証",
+    "amplify": "AWS Amplify",
     "bash": "Bash",
     "tfenv": "tfenv",
     "eventbridge": "Amazon EventBridge",
-    "認証": "認証",
     "python": "Python",
     "vercel": "Vercel",
     "security": "Security",
-    "amplify": "AWS Amplify",
-    "ssssssssss": "ssssssssss",
-    "xxxxxxx": "xxxxxxx"
+    "ttttt": "ttttt"
   }
 }
