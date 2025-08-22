@@ -1,4 +1,4 @@
-name: Update Tags with Gemini AI
+name: Update Tags and Articles Index
 on:
   push:
     paths:
@@ -6,37 +6,44 @@ on:
     branches:
       - main
   workflow_dispatch: # 手動実行も可能に
-
 jobs:
-  update-tags:
+  update-data:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
+      
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-
+      
       - name: Install dependencies
         run: npm install gray-matter @google/generative-ai
-
+      
       - name: Generate tags mapping with Gemini AI
         env:
           GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
         run: node scripts/generate-tags-with-gemini.js
-
+      
+      - name: Generate articles index
+        run: node scripts/collect-articles-index.js
+      
       - name: Commit and push to main-actions branch
         run: |
           git config --global user.name 'GitHub Actions Bot'
           git config --global user.email 'actions@github.com'
           
+          # main-actionsブランチに切り替え
           git fetch origin main-actions
           git checkout main-actions
           git pull origin main-actions
           
+          # 両方のJSONファイルをステージング
           git add public/tags-mapping.json
-          git diff --staged --quiet || git commit -m "🤖 Update tags mapping with Gemini AI"
+          git add public/articles-index.json
+          
+          # 変更がある場合のみコミット
+          git diff --staged --quiet || git commit -m "🤖 Update tags mapping and articles index"
           git push origin main-actions
