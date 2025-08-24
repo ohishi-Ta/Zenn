@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: ["Update Tags and Articles Index"]
     types: [completed]
-    branches: [main-actions]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
