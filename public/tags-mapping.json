@@ -87,6 +87,7 @@
     "eventbridge": "Amazon EventBridge",
     "python": "Python",
     "vercel": "Vercel",
-    "security": "Security"
+    "security": "Security",
+    "aiagent": "AI Agent"
   }
 }
