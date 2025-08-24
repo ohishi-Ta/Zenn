@@ -54,7 +54,6 @@
     "gptoss": "gpt-oss",
     "ollama": "Ollama",
     "codecommit": "AWS CodeCommit",
-    "aiagent": "AI Agent",
     "nextjs": "Next.js",
     "spa": "SPA",
     "graphql": "GraphQL",
@@ -88,6 +87,7 @@
     "eventbridge": "Amazon EventBridge",
     "python": "Python",
     "vercel": "Vercel",
-    "security": "Security"
+    "security": "Security",
+    "agent": "Agent"
   }
 }
