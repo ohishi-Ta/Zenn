@@ -23,6 +23,25 @@ jobs:
     - name: Install dependencies
       run: pip install requests
     
+    - name: Debug repository structure
+      run: |
+        echo "📁 Current directory:"
+        pwd
+        echo ""
+        echo "📋 Repository structure:"
+        find . -name "*.csv" -o -name "public" -type d
+        echo ""
+        echo "🔍 Looking for articles-index.csv:"
+        find . -name "*articles*" -name "*.csv"
+        echo ""
+        echo "📂 Directory listing:"
+        ls -la
+        if [ -d "public" ]; then
+          echo ""
+          echo "📂 public directory contents:"
+          ls -la public/
+        fi
+
     - name: Upload CSV to Dify
       env:
         DIFY_API_KEY: ${{ secrets.DIFY_API_KEY }}
@@ -34,20 +53,51 @@ jobs:
         import requests
         import time
         from pathlib import Path
+        import glob
         
         # 設定
         api_key = os.environ['DIFY_API_KEY']
         api_url = os.environ['DIFY_API_URL']
         dataset_id = os.environ['DIFY_DATASET_ID']
-        csv_file = 'public/articles-index.csv'
         
         headers = {
             'Authorization': f'Bearer {api_key}'
         }
         
-        print(f"🚀 Uploading {csv_file} to Dify RAG...")
+        print(f"🚀 Starting CSV upload to Dify RAG...")
         print(f"   API URL: {api_url}")
         print(f"   Dataset ID: {dataset_id}")
+        
+        # CSVファイルを探す
+        possible_paths = [
+            'public/articles-index.csv',
+            'articles-index.csv',
+            './public/articles-index.csv'
+        ]
+        
+        csv_file = None
+        for path in possible_paths:
+            if Path(path).exists():
+                csv_file = path
+                break
+        
+        # 見つからない場合はワイルドカードで検索
+        if not csv_file:
+            csv_files = glob.glob('**/articles-index.csv', recursive=True)
+            if csv_files:
+                csv_file = csv_files[0]
+        
+        if not csv_file:
+            print("❌ CSV file not found in any of these locations:")
+            for path in possible_paths:
+                print(f"   - {path}")
+            print("🔍 Available CSV files:")
+            csv_files = glob.glob('**/*.csv', recursive=True)
+            for f in csv_files:
+                print(f"   - {f}")
+            exit(1)
+        
+        print(f"✅ Found CSV file: {csv_file}")
         
         # CSVファイルの存在確認
         if not Path(csv_file).exists():
