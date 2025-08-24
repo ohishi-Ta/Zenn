@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: ["Update Tags and Articles Index"]
     types: [completed]
-    branches: [main]
+    branches: [main]  # mainブランチに変更
   workflow_dispatch:
 
 jobs:
@@ -14,6 +14,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        ref: main-actions  # main-actionsブランチをチェックアウト
+        fetch-depth: 1
     
     - name: Setup Python
       uses: actions/setup-python@v4
