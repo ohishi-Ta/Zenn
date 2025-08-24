@@ -1,33 +1,19 @@
-name: Sync Articles to Dify RAG
+name: Upload CSV to Dify RAG
 
 on:
   push:
-    branches: [main2]
+    branches: [main-actions]
     paths:
-      - 'articles/**.md'
-      - 'articles/**.mdx'
-  pull_request:
-    types: [closed]
-    branches: [main2]
-    paths:
-      - 'articles/**'
+      - 'public/articles-index.csv'
   workflow_dispatch:
-    inputs:
-      sync_all:
-        description: 'Sync all articles'
-        required: false
-        type: boolean
-        default: false
 
 jobs:
-  sync-articles:
+  upload-csv-to-dify:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 2
     
     - name: Setup Python
       uses: actions/setup-python@v4
@@ -35,272 +21,96 @@ jobs:
         python-version: '3.11'
     
     - name: Install dependencies
-      run: pip install requests pyyaml
+      run: pip install requests
     
-    - name: Create sync script
-      run: |
-        cat > sync_dify.py << 'SCRIPT'
-        import os
-        import sys
-        import json
-        import requests
-        import hashlib
-        import time
-        from pathlib import Path
-        
-        class DifyRAGSync:
-            def __init__(self):
-                self.api_key = os.environ['DIFY_API_KEY']
-                self.api_url = os.environ['DIFY_API_URL']
-                self.dataset_id = os.environ['DIFY_DATASET_ID']
-                self.headers = {
-                    'Authorization': f'Bearer {self.api_key}',
-                    'Content-Type': 'application/json'
-                }
-                self.sync_all = os.environ.get('SYNC_ALL', 'false').lower() == 'true'
-                # articlesディレクトリを指定
-                self.articles_dir = 'articles'
-                
-            def get_existing_documents(self):
-                """既存ドキュメントの一覧を取得"""
-                docs = {}
-                page = 1
-                while True:
-                    url = f"{self.api_url}/datasets/{self.dataset_id}/documents?page={page}&limit=100"
-                    response = requests.get(url, headers=self.headers)
-                    if response.status_code != 200:
-                        break
-                    data = response.json()
-                    for doc in data.get('data', []):
-                        docs[doc['name']] = doc['id']
-                    if not data.get('has_more', False):
-                        break
-                    page += 1
-                return docs
-            
-            def get_changed_files(self):
-                """articlesディレクトリから変更されたファイルを取得"""
-                if self.sync_all:
-                    # articlesディレクトリの全ファイルを同期
-                    articles_path = Path(self.articles_dir)
-                    if not articles_path.exists():
-                        print(f"⚠️ Directory '{self.articles_dir}' not found")
-                        return []
-                    
-                    files = []
-                    for ext in ['*.md', '*.mdx']:
-                        files.extend(articles_path.glob(ext))
-                        # サブディレクトリも含める場合
-                        files.extend(articles_path.rglob(ext))
-                    
-                    return [str(f) for f in files]
-                else:
-                    # 変更されたファイルのみ（articlesディレクトリ内）
-                    import subprocess
-                    result = subprocess.run(
-                        ['git', 'diff', '--name-only', 'HEAD^', 'HEAD'],
-                        capture_output=True, text=True
-                    )
-                    
-                    if result.returncode != 0:
-                        # fallback: articlesディレクトリの最近のmdファイルを取得
-                        articles_path = Path(self.articles_dir)
-                        if articles_path.exists():
-                            files = list(articles_path.glob('*.md'))[:5]
-                            return [str(f) for f in files]
-                        return []
-                    
-                    files = result.stdout.strip().split('\n')
-                    # articlesディレクトリ内のファイルのみフィルタ
-                    return [
-                        f for f in files 
-                        if f.startswith(self.articles_dir + '/') and f.endswith(('.md', '.mdx'))
-                    ]
-            
-            def extract_zenn_metadata(self, content):
-                """Zenn形式のメタデータを抽出"""
-                metadata = {}
-                if content.startswith('---'):
-                    try:
-                        end = content.index('---', 3)
-                        frontmatter = content[3:end].strip()
-                        for line in frontmatter.split('\n'):
-                            if ':' in line:
-                                key, value = line.split(':', 1)
-                                key = key.strip()
-                                value = value.strip().strip('"\'')
-                                
-                                # Zenn特有のメタデータ
-                                if key in ['title', 'emoji', 'type', 'topics', 'published']:
-                                    metadata[key] = value
-                                    
-                        # topicsをリストに変換
-                        if 'topics' in metadata:
-                            topics_str = metadata['topics'].strip('[]')
-                            metadata['topics'] = [t.strip().strip('"') for t in topics_str.split(',')]
-                    except:
-                        pass
-                return metadata
-            
-            def sync_document(self, filepath, existing_docs):
-                """ドキュメントを同期"""
-                try:
-                    with open(filepath, 'r', encoding='utf-8') as f:
-                        content = f.read()
-                    
-                    if not content.strip():
-                        return False
-                    
-                    # ファイル名から拡張子を除去
-                    doc_name = os.path.basename(filepath)
-                    
-                    # Zennメタデータを抽出
-                    zenn_metadata = self.extract_zenn_metadata(content)
-                    
-                    # メタデータを構築
-                    metadata = {
-                        "source": "github_articles",
-                        "path": filepath,
-                        "repository": os.environ.get('GITHUB_REPOSITORY', ''),
-                        "commit": os.environ.get('GITHUB_SHA', '')[:7],
-                        "sync_time": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
-                        "articles_dir": self.articles_dir
-                    }
-                    
-                    # Zennメタデータを追加
-                    metadata.update(zenn_metadata)
-                    
-                    # カテゴリを推定（ファイル名やディレクトリ構造から）
-                    path_parts = filepath.split('/')
-                    if len(path_parts) > 2:  # articles/subdirectory/file.md
-                        metadata['category'] = path_parts[1]
-                    
-                    payload = {
-                        "name": doc_name,
-                        "text": content,
-                        "indexing_technique": "high_quality",
-                        "process_rule": {
-                            "mode": "automatic",
-                            "rules": {
-                                "pre_processing_rules": [
-                                    {"id": "remove_extra_spaces", "enabled": True},
-                                    {"id": "remove_urls_emails", "enabled": False}
-                                ],
-                                "segmentation": {
-                                    "separator": "\n\n",
-                                    "max_tokens": 1000
-                                }
-                            }
-                        },
-                        "metadata": metadata
-                    }
-                    
-                    if doc_name in existing_docs:
-                        # 更新
-                        url = f"{self.api_url}/datasets/{self.dataset_id}/documents/{existing_docs[doc_name]}/update_by_text"
-                        response = requests.post(url, headers=self.headers, json=payload)
-                        action = "Updated"
-                    else:
-                        # 新規作成
-                        url = f"{self.api_url}/datasets/{self.dataset_id}/document/create_by_text"
-                        response = requests.post(url, headers=self.headers, json=payload)
-                        action = "Created"
-                    
-                    if response.status_code in [200, 201]:
-                        print(f"✅ {action}: {filepath}")
-                        if zenn_metadata.get('title'):
-                            print(f"   📝 Title: {zenn_metadata['title']}")
-                        if zenn_metadata.get('topics'):
-                            print(f"   🏷️ Topics: {', '.join(zenn_metadata['topics'])}")
-                        return True
-                    else:
-                        print(f"❌ Failed to {action.lower()}: {filepath}")
-                        print(f"   Response: {response.status_code} - {response.text[:200]}")
-                        return False
-                        
-                except Exception as e:
-                    print(f"❌ Error processing {filepath}: {str(e)}")
-                    return False
-            
-            def run(self):
-                """メイン処理"""
-                print("🚀 Starting Dify RAG synchronization for /articles directory...")
-                print(f"   API URL: {self.api_url}")
-                print(f"   Dataset ID: {self.dataset_id}")
-                print(f"   Articles Directory: {self.articles_dir}")
-                
-                # articlesディレクトリの存在確認
-                if not Path(self.articles_dir).exists():
-                    print(f"❌ Error: '{self.articles_dir}' directory not found!")
-                    print("   Please ensure the articles directory exists in your repository.")
-                    sys.exit(1)
-                
-                # 既存ドキュメントを取得
-                existing_docs = self.get_existing_documents()
-                print(f"📚 Found {len(existing_docs)} existing documents in Dify")
-                
-                # 変更ファイルを取得
-                files = self.get_changed_files()
-                if not files:
-                    print("ℹ️ No articles to sync")
-                    return
-                
-                print(f"📝 Found {len(files)} articles to process...")
-                for f in files[:5]:  # 最初の5ファイルを表示
-                    print(f"   - {f}")
-                if len(files) > 5:
-                    print(f"   ... and {len(files) - 5} more")
-                
-                # 同期実行
-                success = 0
-                failed = 0
-                for filepath in files:
-                    if self.sync_document(filepath, existing_docs):
-                        success += 1
-                    else:
-                        failed += 1
-                
-                # サマリー
-                print(f"\n📊 Sync Summary:")
-                print(f"   ✅ Success: {success}")
-                print(f"   ❌ Failed: {failed}")
-                print(f"   📁 Total: {len(files)}")
-                
-                # GitHub Actions サマリー
-                summary_file = os.environ.get('GITHUB_STEP_SUMMARY')
-                if summary_file:
-                    with open(summary_file, 'w') as f:
-                        f.write(f"# 📚 Dify Articles Sync Results\n\n")
-                        f.write(f"| Metric | Count |\n")
-                        f.write(f"|--------|-------|\n")
-                        f.write(f"| ✅ Success | {success} |\n")
-                        f.write(f"| ❌ Failed | {failed} |\n")
-                        f.write(f"| 📁 Total Files | {len(files)} |\n")
-                        f.write(f"| 📚 Existing Docs | {len(existing_docs)} |\n")
-                        f.write(f"| 📂 Directory | `{self.articles_dir}` |\n")
-                        f.write(f"\n**Dataset:** `{self.dataset_id}`\n")
-                        f.write(f"**Commit:** `{os.environ.get('GITHUB_SHA', 'unknown')[:7]}`\n")
-                        f.write(f"**Repository:** `{os.environ.get('GITHUB_REPOSITORY', 'unknown')}`\n")
-                        
-                        if files and success > 0:
-                            f.write(f"\n### Successfully Synced Articles\n")
-                            for filepath in files[:10]:
-                                f.write(f"- `{filepath}`\n")
-                            if len(files) > 10:
-                                f.write(f"- ... and {len(files) - 10} more\n")
-                
-                if failed > 0:
-                    sys.exit(1)
-        
-        if __name__ == "__main__":
-            syncer = DifyRAGSync()
-            syncer.run()
-        SCRIPT
-    
-    - name: Run synchronization
+    - name: Upload CSV to Dify
       env:
         DIFY_API_KEY: ${{ secrets.DIFY_API_KEY }}
         DIFY_API_URL: ${{ secrets.DIFY_API_URL }}
         DIFY_DATASET_ID: ${{ secrets.DIFY_DATASET_ID }}
-        SYNC_ALL: ${{ github.event.inputs.sync_all || 'false' }}
-      run: python sync_dify.py
+      run: |
+        python << 'EOF'
+        import os
+        import requests
+        import time
+        from pathlib import Path
+        
+        # 設定
+        api_key = os.environ['DIFY_API_KEY']
+        api_url = os.environ['DIFY_API_URL']
+        dataset_id = os.environ['DIFY_DATASET_ID']
+        csv_file = 'public/articles-index.csv'
+        
+        headers = {
+            'Authorization': f'Bearer {api_key}'
+        }
+        
+        print(f"🚀 Uploading {csv_file} to Dify RAG...")
+        print(f"   API URL: {api_url}")
+        print(f"   Dataset ID: {dataset_id}")
+        
+        # CSVファイルの存在確認
+        if not Path(csv_file).exists():
+            print(f"❌ CSV file not found: {csv_file}")
+            exit(1)
+        
+        # ファイルサイズ確認
+        file_size = Path(csv_file).stat().st_size
+        print(f"📊 File size: {file_size:,} bytes")
+        
+        # CSVファイルをアップロード
+        try:
+            with open(csv_file, 'rb') as f:
+                files = {
+                    'file': (csv_file, f, 'text/csv')
+                }
+                
+                # メタデータ
+                data = {
+                    'indexing_technique': 'high_quality',
+                    'process_rule': '{"mode":"automatic","rules":{"pre_processing_rules":[{"id":"remove_extra_spaces","enabled":true},{"id":"remove_urls_emails","enabled":false}],"segmentation":{"separator":"\\n","max_tokens":1000}}}',
+                    'duplicate_removal': 'true'
+                }
+                
+                url = f"{api_url}/datasets/{dataset_id}/document/create_by_file"
+                response = requests.post(url, headers=headers, files=files, data=data)
+                
+                if response.status_code in [200, 201]:
+                    result = response.json()
+                    print("✅ Successfully uploaded CSV to Dify!")
+                    print(f"   Document ID: {result.get('document', {}).get('id', 'N/A')}")
+                    
+                    # GitHub Actions サマリー
+                    summary_file = os.environ.get('GITHUB_STEP_SUMMARY')
+                    if summary_file:
+                        with open(summary_file, 'w') as sf:
+                            sf.write("# 📊 CSV Upload to Dify\n\n")
+                            sf.write("| Item | Value |\n")
+                            sf.write("|------|-------|\n")
+                            sf.write(f"| ✅ Status | Success |\n")
+                            sf.write(f"| 📁 File | `{csv_file}` |\n")
+                            sf.write(f"| 📊 Size | {file_size:,} bytes |\n")
+                            sf.write(f"| 🆔 Document ID | `{result.get('document', {}).get('id', 'N/A')}` |\n")
+                            sf.write(f"| 📚 Dataset | `{dataset_id}` |\n")
+                            sf.write(f"| 🔗 Commit | `{os.environ.get('GITHUB_SHA', 'unknown')[:7]}` |\n")
+                
+                else:
+                    print(f"❌ Failed to upload CSV")
+                    print(f"   Status Code: {response.status_code}")
+                    print(f"   Response: {response.text[:500]}")
+                    
+                    summary_file = os.environ.get('GITHUB_STEP_SUMMARY')
+                    if summary_file:
+                        with open(summary_file, 'w') as sf:
+                            sf.write("# ❌ CSV Upload Failed\n\n")
+                            sf.write(f"**Error:** {response.status_code} - {response.text[:200]}\n\n")
+                            sf.write(f"**File:** `{csv_file}`\n")
+                    
+                    exit(1)
+                    
+        except Exception as e:
+            print(f"❌ Error uploading CSV: {str(e)}")
+            exit(1)
+        
+        print("🎉 Upload completed successfully!")
+        EOF
