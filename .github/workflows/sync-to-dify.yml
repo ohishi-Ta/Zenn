@@ -1,10 +1,10 @@
 name: Upload CSV to Dify RAG
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Update Tags and Articles Index"]
+    types: [completed]
     branches: [main-actions]
-    paths:
-      - 'public/articles-index.csv'
   workflow_dispatch:
 
 jobs:
