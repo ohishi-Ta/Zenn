@@ -114,8 +114,12 @@ jobs:
         # CSVファイルをアップロード
         try:
             with open(csv_file, 'rb') as f:
+                # ファイル名のパス部分を除去してファイル名のみ取得
+                from pathlib import Path
+                file_name_only = Path(csv_file).name
+                
                 files = {
-                    'file': (csv_file, f, 'text/csv')
+                    'file': (file_name_only, f, 'text/csv')
                 }
                 
                 # メタデータ
