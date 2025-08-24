@@ -73,9 +73,9 @@ jobs:
         
         # CSVファイルを探す
         possible_paths = [
-            'public/articles-index.csv',
+            'public/articles_index.csv',
             'articles-index.csv',
-            './public/articles-index.csv'
+            './public/articles_index.csv'
         ]
         
         csv_file = None
