@@ -34,7 +34,7 @@
 6a6f8a2d8bb8ed,【API Gateway・StepFunctions・Lambda】API Gatewayでリダイレクトさせる,aws|apigateway|stepfunctions
 6ac77f32f40762,【CodePipeline】デプロイプロバイダーで「AWS Lambda」を直接指定できるようになりました,aws|lambda|codepipeline|codecommit
 6bade6ff532153,【Terraform】tfstateをS3に保存し共有を可能にする,aws|s3|terraform
-71201ab711954e,【Amazon Bedrock】Bedrock Agents × Strands Agents × AgentCoreの機能を整理してみた,aws|agent|bedrock|amazonbedrock|agentcore
+71201ab711954e,【Amazon Bedrock】Bedrock Agents × Strands Agents × AgentCoreの機能を整理してみた,aws|aiagent|bedrock|amazonbedrock|agentcore
 787142f8d11286,React（Next.js）でスクロール量を測る,nextjs|react
 7cb022da36caf4,【Terraform】セキュリティグループの作成,aws|s3|terraform
 7da0854c4daae1,【API Gateway】使用料プランでAPIキー認可を実装してみた,aws|lambda|apigateway|cloudwatchlogs
