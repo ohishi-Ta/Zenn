@@ -73,9 +73,9 @@ jobs:
         
         # CSVファイルを探す
         possible_paths = [
-            'public/articles_index.csv',
-            'articles-index.csv',
-            './public/articles_index.csv'
+            'public/articles.csv',
+            'articles.csv',
+            './public/articles.csv'
         ]
         
         csv_file = None
@@ -86,7 +86,7 @@ jobs:
         
         # 見つからない場合はワイルドカードで検索
         if not csv_file:
-            csv_files = glob.glob('**/articles-index.csv', recursive=True)
+            csv_files = glob.glob('**/articles.csv', recursive=True)
             if csv_files:
                 csv_file = csv_files[0]
         
