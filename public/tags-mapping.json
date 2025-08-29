@@ -54,6 +54,7 @@
     "gptoss": "gpt-oss",
     "ollama": "Ollama",
     "codecommit": "AWS CodeCommit",
+    "aiagent": "AI Agent",
     "nextjs": "Next.js",
     "spa": "SPA",
     "graphql": "GraphQL",
@@ -88,6 +89,8 @@
     "python": "Python",
     "vercel": "Vercel",
     "security": "Security",
-    "aiagent": "AI Agent"
+    "rss": "RSS",
+    "amazontranslate": "Amazon Translate",
+    "linebot": "LINE Bot"
   }
 }
