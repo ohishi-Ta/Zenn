@@ -2,7 +2,7 @@
 088ae227b8db66,【API Gateway】Lambdaプロキシ統合とカスタム統合のリクエストデータの違い,aws|lambda|apigateway
 0a2280a4e00734,「ゼロからはじめるLinuxサーバー構築・運用ガイド 第2版 動かしながら学ぶWebサーバーの作り方」で学んでみた,linux
 0c9598edd7eeb1,Sourcetreeでgithubのリモートリポジトリ作成,github
-10007f6fa2397b,最新AWS情報を公式RSSから自動翻訳してLINEに通知,aws|lambda|rss|amazontranslate|linebot
+10007f6fa2397b,最新AWS情報を公式RSSから自動翻訳してLINEに通知,aws|lambda|eventbridge|amazontranslate|linebot
 11770898ae7449,【MCP】Claude Desktopから AWS MCP Serversを使ってAWSのドキュメントを参照してみた,aws|mcp|claude
 11f5bb0c44f8d4,DNSについて学んでみた,dns
 15fad5e23d659a,【API Gateway】CloudWatch Logsを有効化する,aws|apigateway|cloudwatchlogs
