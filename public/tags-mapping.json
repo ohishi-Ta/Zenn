@@ -5,6 +5,9 @@
     "apigateway": "Amazon API Gateway",
     "linux": "Linux",
     "github": "GitHub",
+    "rss": "RSS",
+    "amazontranslate": "Amazon Translate",
+    "linebot": "LINE Bot",
     "mcp": "MCP",
     "claude": "Claude",
     "dns": "DNS",
@@ -88,9 +91,6 @@
     "eventbridge": "Amazon EventBridge",
     "python": "Python",
     "vercel": "Vercel",
-    "security": "Security",
-    "rss": "RSS",
-    "amazontranslate": "Amazon Translate",
-    "linebot": "LINE Bot"
+    "security": "Security"
   }
 }
