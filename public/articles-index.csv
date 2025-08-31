@@ -7,7 +7,7 @@
 11f5bb0c44f8d4,DNSについて学んでみた,dns
 15fad5e23d659a,【API Gateway】CloudWatch Logsを有効化する,aws|apigateway|cloudwatchlogs
 191bac17622130,【Terraform】の基本構文,aws|terraform
-1a9884072d4b18,最新AWS情報を公式RSSから自動翻訳してslackに通知,aws|lambda|amazontranslate|slack|slackbot
+1a9884072d4b18,最新AWS情報を【Incoming Webhooks】でslackに通知,aws|lambda|amazontranslate|slack|slackbot
 1c39aadd259b80,【Amazon Bedrock】検索拡張⽣成(RAG) の精度を向上させるAdvanced RAGについて学んでみた,aws|amazonbedrock|bedrock|advancedrag|rag
 23c7e328f4614d,【Amazon Bedrock】Lambda関数からBedrockを呼び出してLLMアプリを作ってみた,aws|bedrock
 2513686f672704,【Amazon Bedrock】Amazon S3 Vectors[プレビュー] が発表！ナレッジベースで使ってみた,aws|s3|bedrock|amazonbedrock
@@ -55,6 +55,7 @@ aba7093f7a2401,Dockerを使用してReact/Next.js開発環境をつくる,docker
 ae399f783a5501,【AWS Skill Builder】AWS公式模擬試験のリンク集めときました！,aws|リンク集|aws認定
 ae8279030e6dd3,【Terraform】Route53の作成,aws|terraform|route53
 af8776fa0ac4dc,「Next.js+ヘッドレスCMSで始めるモダンWebサイト制作入門」を読んで,nextjs|microcms|入門
+b1d6e7c36797c9,最新AWS情報を【Bot Token + chat.postMessage】でslackに通知,aws|lambda|amazontranslate|slack|slackbot
 b264ae4f531919,プライベートEC2にWinSCPを使用してSSMポートフォワーディング機能でファイル転送する,aws|ec2|sessionmanager|systemsmanager|winscp
 b9e44038d1085b,【Amazon Aurora Serverless v2・Amazon Bedrock】手動でベクトルDBを作成してRAGを作成してみよう,ai|aws|aurora|bedrock|rag
 bd519790183a1b,【Vite】.env環境変数ファイルをデプロイ環境ごとに設定する,vite|dotenv|react|nextjs|typescript

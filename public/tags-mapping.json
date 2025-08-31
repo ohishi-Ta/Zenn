@@ -6,12 +6,15 @@
     "linux": "Linux",
     "github": "GitHub",
     "amazontranslate": "Amazon Translate",
+    "line": "LINE",
     "linebot": "LINE Bot",
     "mcp": "MCP",
     "claude": "Claude",
     "dns": "DNS",
     "cloudwatchlogs": "Amazon CloudWatch Logs",
     "terraform": "Terraform",
+    "slack": "Slack",
+    "slackbot": "Slackbot",
     "amazonbedrock": "Amazon Bedrock",
     "bedrock": "Bedrock",
     "advancedrag": "Advanced RAG",
@@ -90,9 +93,6 @@
     "eventbridge": "Amazon EventBridge",
     "python": "Python",
     "vercel": "Vercel",
-    "security": "Security",
-    "line": "LINE",
-    "slack": "Slack",
-    "slackbot": "Slackbot"
+    "security": "Security"
   }
 }
