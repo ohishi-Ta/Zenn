@@ -8,9 +8,9 @@
 15fad5e23d659a,【API Gateway】CloudWatch Logsを有効化する,aws|apigateway|cloudwatchlogs
 191bac17622130,【Terraform】の基本構文,aws|terraform
 1a9884072d4b18,最新AWS情報を【Incoming Webhooks】でslackに通知,aws|lambda|amazontranslate|slack|slackbot
-1c39aadd259b80,【Amazon Bedrock】検索拡張⽣成(RAG) の精度を向上させるAdvanced RAGについて学んでみた,aws|amazonbedrock|bedrock|advancedrag|rag
-23c7e328f4614d,【Amazon Bedrock】Lambda関数からBedrockを呼び出してLLMアプリを作ってみた,aws|bedrock
-2513686f672704,【Amazon Bedrock】Amazon S3 Vectors[プレビュー] が発表！ナレッジベースで使ってみた,aws|s3|bedrock|amazonbedrock
+1c39aadd259b80,【Amazon Bedrock】検索拡張⽣成(RAG) の精度を向上させるAdvanced RAGについて学んでみた,aws|ai|bedrock|advancedrag|rag
+23c7e328f4614d,【Amazon Bedrock】Lambda関数からBedrockを呼び出してLLMアプリを作ってみた,aws|bedrock|lambda|ai|react
+2513686f672704,【Amazon Bedrock】Amazon S3 Vectors[プレビュー] が発表！ナレッジベースで使ってみた,aws|s3|bedrock|ai
 264ff51a7e3f1e,npx tailwindcss initでnpm error could not determine executable to run,react|tailwindcss
 28ac7a1c0e7177,【API Gateway・StepFunctions】API呼び出しドメイン（Origin）によってStepFunctions内で分岐をする,aws|lambda|apigateway|stepfunctions
 2a176ccd934ba1,MacのDocker環境でMovable Typeインストール,docker|movabletype
@@ -24,7 +24,7 @@
 438e218c7aa0ca,【Amazon Bedrock】の重要用語をまとめてみた,ai|aws|bedrock|llm|rag
 48759c0fbdedc2,【S3・CloudFront】URL の末尾が/（スラッシュ）で終わるリクエストを/index.html にルーティングする,aws|s3|cloudfont
 4fa0fe328b917d,EC2へSSHするときのWindowsでのキーペアの置き場所,linux|ec2|keypair
-5022678f2ecf76,【Amazon Bedrock AgentCore】Streamlit使って簡単なチャットを作成してみた,ai|aws|bedrock|amazonbedrock|agentcore
+5022678f2ecf76,【Amazon Bedrock AgentCore】Streamlit使って簡単なチャットを作成してみた,ai|aws|bedrock|agentcore
 507240c7897acb,【Amazon SageMaker】主要なSageMakerの機能をまとめてみた（AIF/MLA/MLS 対策）,ai|aws|ml|sagemaker
 51482ec9adb8a3,CloudFront・ALB・ECS・Fargate・NginxでWebサイト作成②,aws|cloudfront|alb|route53|acm
 572bcd7d2ebd0a,【ECS・Fargate・Docker】ECS・Fargateを使用してコンテナ技術の基礎を学習してみた,aws|ecs|fargate|docker
@@ -36,7 +36,7 @@
 6a6f8a2d8bb8ed,【API Gateway・StepFunctions・Lambda】API Gatewayでリダイレクトさせる,aws|apigateway|stepfunctions
 6ac77f32f40762,【CodePipeline】デプロイプロバイダーで「AWS Lambda」を直接指定できるようになりました,aws|lambda|codepipeline|codecommit
 6bade6ff532153,【Terraform】tfstateをS3に保存し共有を可能にする,aws|s3|terraform
-71201ab711954e,【Amazon Bedrock】Bedrock Agents × Strands Agents × AgentCoreの機能を整理してみた,aws|aiagent|bedrock|amazonbedrock|agentcore
+71201ab711954e,【Amazon Bedrock】Bedrock Agents × Strands Agents × AgentCoreの機能を整理してみた,aws|aiagent|ai|bedrock|agentcore
 787142f8d11286,React（Next.js）でスクロール量を測る,nextjs|react
 7cb022da36caf4,【Terraform】セキュリティグループの作成,aws|s3|terraform
 7da0854c4daae1,【API Gateway】使用料プランでAPIキー認可を実装してみた,aws|lambda|apigateway|cloudwatchlogs
@@ -60,9 +60,10 @@ b264ae4f531919,プライベートEC2にWinSCPを使用してSSMポートフォ�
 b9e44038d1085b,【Amazon Aurora Serverless v2・Amazon Bedrock】手動でベクトルDBを作成してRAGを作成してみよう,ai|aws|aurora|bedrock|rag
 bd519790183a1b,【Vite】.env環境変数ファイルをデプロイ環境ごとに設定する,vite|dotenv|react|nextjs|typescript
 be03d41769d9f6,【Next.js・Tailwind.css・Micromodal.js】モーダルのアクティブ時に背景を固定する,react|nextjs|typescript|tailwindcss|micromodal
+bed899ae40cc7c,【Amazon Bedrock】Converse API（Converse/ConverseStream）についてまとめてみた,aws|bedrock|ai
 c470cdb619768f,【Terraform】モジュールについて,ec2|terraform
 c92f6a352ffa22,【Terraform】VPCとサブネットの作成,aws|terraform
-d1d6f9cbb33e81,【Amazon Bedrock】ナレッジベース活用AIアプリの構造化データのチャギング戦略,aws|bedrock|amazonbedrock|claude|rag
+d1d6f9cbb33e81,【Amazon Bedrock】ナレッジベース活用AIアプリの構造化データのチャギング戦略,aws|bedrock|ai|claude|rag
 d553e2281a4eb9,【Amazon Cognito】 マネージドログインの日本語化（react-oidc-contextと使わない場合）,aws|react|cognito
 d6327f2845c627,【Dify・Cloudflare・GitHub】Quick TunnelsでDifyを公開しGitHubから自動でRAGに取り込んでみた,dify|cloudflare|github|githubactions
 d888cff2d28e80,【Cognito ユーザープール・Next.js】安全にCognito認証を実装する,aws|cognito|認証|nextjs|amplify
