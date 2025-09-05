@@ -14,6 +14,7 @@
 264ff51a7e3f1e,npx tailwindcss initでnpm error could not determine executable to run,react|tailwindcss
 28ac7a1c0e7177,【API Gateway・StepFunctions】API呼び出しドメイン（Origin）によってStepFunctions内で分岐をする,aws|lambda|apigateway|stepfunctions
 2a176ccd934ba1,MacのDocker環境でMovable Typeインストール,docker|movabletype
+2d7f234ef98073,【Amazon Bedrock・SAM】Zennの.mdファイル記事をAIでレビューするVScord拡張機能をつくってみた,aws|bedrock|ai|sam|zenn
 34bf7b0b72c369,【AWS Organizations・IAM Identity Center】個人アカウントでマルチアカウント作成をしてSSO設定をしてみた,aws|organizations|iamidentitycenter
 357f0f6e5a051f,【API Gateway】トークンベースのLambda Authorizerを使用した認可を実装してみた,aws|lambda|apigateway|authorization|認可
 36fc44c62745a8,Bitnami AMIにSSMセッションマネージャーでSSH接続する,aws|ssh|sessionmanager|systemsmanager
