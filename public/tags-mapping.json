@@ -25,6 +25,7 @@
     "stepfunctions": "AWS Step Functions",
     "docker": "Docker",
     "movabletype": "Movable Type",
+    "sam": "AWS SAM",
     "zenn": "Zenn",
     "organizations": "AWS Organizations",
     "iamidentitycenter": "AWS IAM Identity Center",
@@ -93,6 +94,6 @@
     "python": "Python",
     "vercel": "Vercel",
     "security": "Security",
-    "sam": "AWS SAM"
+    "genu": "GenU"
   }
 }

@@ -74,6 +74,7 @@ e36041d3af5ea9,【Zenn API・Next.js】Zennの記事をAPIで取得してみよ�
 ed05aef667e852,【API Gateway・Cognitoユーザープール】Cognitoを使用した認証・認可を実装してみた,aws|apigateway|認証|cognito|認可
 eea9b8461798cd,【Terraform】ACMの作成,terraform|dns|route53|acm
 f0e50cf1afd62a,【MCP】公式クイックスタートを活用してMCP天気予報サーバーを構築してみた,python|mcp|claude
+f36a5efefcee35,GenU（Generative AI Use Cases JP）の閉域モードを試してみた,aws|bedrock|genu
 f43e515974b7ec,【Amplify・Next.js】SSRの環境変数を設定する,aws|nextjs|amplify
 f737a015e796d1,Movable Type AMI版 を使用せず、EC2でMT動かしてみた,aws|linux|ec2|cms|movabletype
 f855e8f5475e00,【Vercel・Next.js】Vercelでデプロイしたサイトをiframeで別ドメインに読み込む方法,vercel|nextjs|api|security
