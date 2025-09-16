@@ -92,8 +92,10 @@
     "tfenv": "tfenv",
     "eventbridge": "Amazon EventBridge",
     "python": "Python",
+    "genu": "GenU",
     "vercel": "Vercel",
     "security": "Security",
-    "genu": "GenU"
+    "controltower": "AWS Control Tower",
+    "accountfactory": "Account Factory"
   }
 }

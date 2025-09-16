@@ -50,6 +50,7 @@
 933a67998e73a9,Bitnami AMI（WordPress）でBasic認証を実装する,aws|ec2|ami|bitnami
 9529d1615a6321,【Terraform】EC2インスタンスを作成してみる,aws|ec2|terraform|awscli|ami
 9cdfb87cd0437b,PowerCMSX入門,cms|movabletype|powercms
+a4d04c98aa4380,【AWS Control Tower】 Account Factory Customization (AFC)でAWSアカウントを作成後のリソース作成を自動化してみた,aws|controltower|accountfactory
 aa9431e7fdec08,【Terraform】EC2の作成（AMIの検索、取得）,aws|ec2|terraform
 ab4f30660465bf,VSコードを使用したDraw.ioのリアルタイム共同編集,vscode|drawio
 aba7093f7a2401,Dockerを使用してReact/Next.js開発環境をつくる,docker|react
