@@ -70,6 +70,8 @@
     "awscli": "AWS CLI",
     "cms": "CMS",
     "powercms": "PowerCMS",
+    "controltower": "AWS Control Tower",
+    "accountfactory": "Account Factory",
     "vscode": "VS Code",
     "drawio": "Draw.io",
     "リンク集": "リンク集",
@@ -94,8 +96,6 @@
     "python": "Python",
     "genu": "GenU",
     "vercel": "Vercel",
-    "security": "Security",
-    "controltower": "AWS Control Tower",
-    "accountfactory": "Account Factory"
+    "security": "Security"
   }
 }
