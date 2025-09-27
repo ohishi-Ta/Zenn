@@ -22,6 +22,8 @@
     "react": "React",
     "s3": "Amazon S3",
     "tailwindcss": "Tailwind CSS",
+    "genu": "GenU",
+    "codebuild": "AWS CodeBuild",
     "stepfunctions": "AWS Step Functions",
     "docker": "Docker",
     "movabletype": "Movable Type",
@@ -54,7 +56,6 @@
     "acm": "AWS Certificate Manager",
     "elb": "Elastic Load Balancing",
     "codepipeline": "AWS CodePipeline",
-    "codebuild": "AWS CodeBuild",
     "openai": "OpenAI",
     "chatgpt": "ChatGPT",
     "gptoss": "gpt-oss",
@@ -94,8 +95,9 @@
     "tfenv": "tfenv",
     "eventbridge": "Amazon EventBridge",
     "python": "Python",
-    "genu": "GenU",
     "vercel": "Vercel",
-    "security": "Security"
+    "security": "Security",
+    "servicecatalog": "AWS Service Catalog",
+    "cloudformation": "AWS CloudFormation"
   }
 }

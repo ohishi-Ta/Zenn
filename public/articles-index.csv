@@ -12,6 +12,7 @@
 23c7e328f4614d,【Amazon Bedrock】Lambda関数からBedrockを呼び出してLLMアプリを作ってみた,aws|bedrock|lambda|ai|react
 2513686f672704,【Amazon Bedrock】Amazon S3 Vectors[プレビュー] が発表！ナレッジベースで使ってみた,aws|s3|bedrock|ai
 264ff51a7e3f1e,npx tailwindcss initでnpm error could not determine executable to run,react|tailwindcss
+26a1871037c8b9,【AWS Service Catalog】GenUのオプションをマネコンから設定・デプロイしてみた,aws|genu|servicecatalog|cloudformation|codebuild
 28ac7a1c0e7177,【API Gateway・StepFunctions】API呼び出しドメイン（Origin）によってStepFunctions内で分岐をする,aws|lambda|apigateway|stepfunctions
 2a176ccd934ba1,MacのDocker環境でMovable Typeインストール,docker|movabletype
 2d7f234ef98073,【Amazon Bedrock・SAM】Zennの.mdファイル記事をAIでレビューするVScord拡張機能をつくってみた,aws|bedrock|ai|sam|zenn
