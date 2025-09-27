@@ -23,6 +23,8 @@
     "s3": "Amazon S3",
     "tailwindcss": "Tailwind CSS",
     "genu": "GenU",
+    "servicecatalog": "AWS Service Catalog",
+    "cloudformation": "AWS CloudFormation",
     "codebuild": "AWS CodeBuild",
     "stepfunctions": "AWS Step Functions",
     "docker": "Docker",
@@ -96,8 +98,6 @@
     "eventbridge": "Amazon EventBridge",
     "python": "Python",
     "vercel": "Vercel",
-    "security": "Security",
-    "servicecatalog": "AWS Service Catalog",
-    "cloudformation": "AWS CloudFormation"
+    "security": "Security"
   }
 }
