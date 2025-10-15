@@ -24,6 +24,7 @@
 402e29078147b7,AWSome Day Online Conference へ参加しました,aws|ec2|s3|iam|rds
 4238cbe5df7683,WordPressの画像ストレージをS3＋CloudFrontで構築する②,aws|wordpress|s3|cloudfront
 438e218c7aa0ca,【Amazon Bedrock】の重要用語をまとめてみた,ai|aws|bedrock|llm|rag
+4406108763ce9f,【AWS Service Catalog】新規アカウント作成を自動化+SSOで設定してみた,aws|servicecatalog|cloudformation|iamidentitycenter|organizations
 48759c0fbdedc2,【S3・CloudFront】URL の末尾が/（スラッシュ）で終わるリクエストを/index.html にルーティングする,aws|s3|cloudfont
 4fa0fe328b917d,EC2へSSHするときのWindowsでのキーペアの置き場所,linux|ec2|keypair
 5022678f2ecf76,【Amazon Bedrock AgentCore】Streamlit使って簡単なチャットを作成してみた,ai|aws|bedrock|agentcore
